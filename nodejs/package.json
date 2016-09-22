@@ -1,0 +1,19 @@
+{
+  "name": "owdbg-client",
+  "version": "1.0.0",
+  "description": "OpenWhisk Debug Client",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app"
+  },
+  "author": "IBM",
+  "dependencies": {
+    "bufferutil": "^1.2.1",
+    "cloudant": "^1.4.3",
+    "express": "^4.14.0",
+    "express-ws": "^2.0.0",
+    "properties-parser": "^0.3.1",
+    "ws": "^1.1.1"
+  }
+}
