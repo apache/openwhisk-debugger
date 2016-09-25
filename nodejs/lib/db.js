@@ -1,4 +1,4 @@
-var   Cloudant = require("cloudant"),
+/*var   Cloudant = require("cloudant"),
  VCAP_SERVICES = JSON.parse(process.env.VCAP_SERVICES),
   instanceName = 'OWDBG',
         dbName = 'owdbg-registry';
@@ -14,7 +14,7 @@ try {
 } catch (e) {
     console.log("Could not initialize cloudant");
     cloudant = undefined;
-}
+}*/
 
 /*var WebSocketServer = require('ws').Server;
 function startWebSocket(onMessage, docRev) {
@@ -29,13 +29,15 @@ function startWebSocket(onMessage, docRev) {
 }*/
 
 exports.init = function(next) {
-    if (!cloudant) return next(); // error in initialization
+/*    if (!cloudant) return next(); // error in initialization
 
-    cloudant.db.create(dbName, next);
+      cloudant.db.create(dbName, next);*/
+    next();
 }
 
-function registerDebugClient(key, next, nextOnErr) {
-    var db = cloudant.db.use(dbName);
+var db = {};
+function registerDebugClient(key, ws, next, nextOnErr) {
+/*    var db = cloudant.db.use(dbName);
 
     db.insert({}, key, function(err, body, header) {
 	if (err) {
@@ -45,10 +47,15 @@ function registerDebugClient(key, next, nextOnErr) {
 	} else {
 	    next(body.rev);
 	}
-    });
+	});*/
+    db[key] = {
+	ws: ws,
+	activations: {}
+    }
+    next();
 }
-function unregisterDebugClient(key, next, nextOnErr) {
-    var db = cloudant.db.use(dbName);
+function unregisterDebugClient(key, activationId, result, next, nextOnErr) {
+/*    var db = cloudant.db.use(dbName);
 
     db.get(key, function(err, body, header) {
 	if (err) {
@@ -64,7 +71,22 @@ function unregisterDebugClient(key, next, nextOnErr) {
 		}
 	    });
 	}
-    });
+	});*/
+    console.log('UNREGISTER ' + key + ' ' + activationId);
+    var client = db[key];
+    if (client) {
+	console.log('UNREGISTER:GotClient ' + JSON.stringify(client.activations));
+	var activation = client.activations[activationId];
+	if (activation) {
+	    console.log('UNREGISTER:GotActivation => ' + result);
+	    activation.result = result;
+	}
+	delete db[key];
+    }
+}
+
+exports.getClient = function getClient(key) {
+    return db[key];
 }
 
 function ok(ws) {
@@ -79,22 +101,26 @@ function handleClientMessage(ws) {
     var _oops = oops.bind(undefined, ws);
 
     return function onMessage(message) {
+	console.log('MESSAGE');
 	try {
 	    message = JSON.parse(message);
-	    switch (message.action) {
-	    case "init":
-		registerDebugClient(message.key, _ok, _oops);
+	    console.log('MESSAGE:TYPE ' + message.type + " " + JSON.stringify(message, undefined, 4));
+	    switch (message.type) {
+	    case 'init':
+		registerDebugClient(message.key, ws, _ok, _oops);
 		break;
 		
-	    case "end":
-		unregisterDebugClient(message.key, _ok, _oops);
+	    case 'end':
+		unregisterDebugClient(message.key, message.activationId, message.result, _ok, _oops);
 		break;
 	    }
 	} catch (e) {
+	    console.log('WS:handleCLientMessage:Error ' + JSON.stringify(e));
 	}
     };
 }
 
-exports.registerDebugClient_route = function(ws, res) {
+exports.registerDebugClient = function(ws, req) {
+    console.log("FFFFFFFFFFFFFFFFFFFFFFFFFFF");
     ws.on('message', handleClientMessage(ws));
 }

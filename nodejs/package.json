@@ -9,11 +9,14 @@
   },
   "author": "IBM",
   "dependencies": {
+    "body-parser": "^1.15.2",
     "bufferutil": "^1.2.1",
     "cloudant": "^1.4.3",
     "express": "^4.14.0",
     "express-ws": "^2.0.0",
     "properties-parser": "^0.3.1",
+    "request": "^2.75.0",
+    "uuid": "^2.0.3",
     "ws": "^1.1.1"
   }
 }
