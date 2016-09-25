@@ -1,22 +1,31 @@
-var WebSocket = require('ws');
+var WebSocket = require('ws'),
+    expandHomeDir = require('expand-home-dir'),
+    prompt = require('prompt');
 
-var host = "https://owdbg.mybluemix.net";
-var path = "/client/register";
+var host = 'https://owdbg.mybluemix.net';
+var path = '/ws/client/register';
 
 var uri = host + path;
-console.log(uri);
 var ws = new WebSocket(uri);
-var key = require('properties-parser').parse("~/.wskprops")["AUTH"];
+var key = require('properties-parser').read(expandHomeDir('~/.wskprops'))['AUTH'];
+
+console.log(uri);
+console.log(key);
  
 ws.on('open', function open() {
-    console.log("CONNECTION OPEN");
+    console.log('CONNECTION OPEN');
     ws.send(JSON.stringify({
-	type: "init",
+	type: 'init',
 	key: key
     }));
 });
+
+ws.on('close', function() {
+    console.log('CONNECTION CLOSED ' + JSON.stringify(arguments));
+});
  
 ws.on('message', function(data, flags) {
+    console.log('MESSAGE ' + data + ' ||| ' + JSON.stringify(flags));
     //
     // flags.binary will be set if a binary data is received. 
     // flags.masked will be set if the data was masked.
@@ -24,13 +33,31 @@ ws.on('message', function(data, flags) {
     try {
 	var message = JSON.parse(data);
 	switch (message.type) {
-	case "invoke":
-	    console.log("INVOKE");
+	case 'invoke':
+	    console.log('INVOKE');
 	    console.log(JSON.stringify(message, undefined, 4));
-	    ws.send(JSON.stringify({
-		type: "end",
-		activationid: message.activationId
-	    }));
+
+	    prompt.start();
+	    prompt.get({
+		name: "result", description: "Return value",
+		conform: function(result) {
+		    try {
+			JSON.parse(result);
+			return true;
+		    } catch (e) {
+			console.log("NOPE " + result);
+			return false;
+		    }
+		}
+	    }, function(err, values) {
+		ws.send(JSON.stringify({
+		    type: 'end',
+		    key: message.key,
+		    activationId: message.activationId,
+		    result: values.result
+		}));
+	    });
+	    
 	    break;
 	}
     } catch (e) {
