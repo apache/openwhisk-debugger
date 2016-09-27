@@ -13,6 +13,9 @@ exports.invoke = function(req, res) {
 
     var client = getClient(key);
     if (client) {
+	//
+	// fetch the action details from the openwhisk server
+	//
 	request({
 	    url: "https://openwhisk.ng.bluemix.net/api/v1"
 		+ "/namespaces/" + encodeURIComponent(namespace)
@@ -29,6 +32,9 @@ exports.invoke = function(req, res) {
 	    } else {
 		var activationId = uuid.v4();
 
+		//
+		// send the action details to the debug client
+		//
 		client.ws.send(JSON.stringify({
 		    type: "invoke",
 		    key: key,
@@ -40,11 +46,17 @@ exports.invoke = function(req, res) {
 		    console.log("INVOKE:ErrorSendingToClient " + JSON.stringify(error) + " " + client.ws.readyState);
 		});
 
+		//
+		// create an activation record for this invocation
+		//
 		client.activations[activationId] = activations[activationId] = {
 		    result: undefined,
 		    action: JSON.parse(body)
 		};
 
+		//
+		// respond to the invoke dispatcher that all is well
+		//
 		res.status(200).send({
 		    activationId: activationId
 		});

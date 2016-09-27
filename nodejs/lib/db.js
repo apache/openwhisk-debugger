@@ -54,7 +54,7 @@ function registerDebugClient(key, ws, next, nextOnErr) {
     }
     next();
 }
-function unregisterDebugClient(key, activationId, result, next, nextOnErr) {
+function unregisterDebugClient(key, next, nextOnErr) {
 /*    var db = cloudant.db.use(dbName);
 
     db.get(key, function(err, body, header) {
@@ -76,14 +76,23 @@ function unregisterDebugClient(key, activationId, result, next, nextOnErr) {
     var client = db[key];
     if (client) {
 	console.log('UNREGISTER:GotClient ' + JSON.stringify(client.activations));
-	var activation = client.activations[activationId];
-	if (activation) {
-	    console.log('UNREGISTER:GotActivation => ' + result);
-	    activation.result = result;
-	}
 	delete db[key];
     }
 }
+
+function endActivation(key, activationId, result, next, nextOnErr) {
+    console.log('ENDACTIVATION ' + key + ' ' + activationId);
+    var client = db[key];
+    if (client) {
+	console.log('ENDACTIVATION:GotClient ' + JSON.stringify(client.activations));
+	var activation = client.activations[activationId];
+	if (activation) {
+	    console.log('ENDACTIVATION:GotActivation => ' + result);
+	    activation.result = result;
+	}
+    }
+}
+
 
 exports.getClient = function getClient(key) {
     return db[key];
@@ -111,7 +120,11 @@ function handleClientMessage(ws) {
 		break;
 		
 	    case 'end':
-		unregisterDebugClient(message.key, message.activationId, message.result, _ok, _oops);
+		endActivation(message.key, message.activationId, message.result, _ok, _oops);
+		break;
+
+	    case 'disconnect':
+		unregisterDebugClient(message.key, _ok, _oops);
 		break;
 	    }
 	} catch (e) {
