@@ -60,7 +60,7 @@ function main(params) {
 				    //console.log("Result? " + body.result + " " + body);
 				    if (body.result !== undefined) {
 					clearInterval(timer);
-					resolve(body);
+					resolve(body.result);
 				    }
 				} catch (e) {
 				    console.log("Could not parse result");
