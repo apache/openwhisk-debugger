@@ -1,8 +1,8 @@
-### OpenWhisk Debugger
+# OpenWhisk Debugger
 
 This project currently supports debugging NodeJS actions on your laptop.
 
-# Usage
+## Usage
 
 First, start a debug client:
 ```
