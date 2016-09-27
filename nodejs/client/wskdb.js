@@ -68,7 +68,7 @@ ws.on('message', function(data, flags) {
 		    result: result
 		}));
 
-		ws.close();
+		//ws.close();
 	    }
 	    function next(echoChamberNames) {
 		if (message.action && message.action.exec && message.action.exec.kind.indexOf('nodejs') >= 0) {
@@ -122,7 +122,7 @@ function debugNodeJS(message, ws, echoChamberNames, done) {
     var startOfMethodBody = code.search(r);
     if (startOfMethodBody >= 0) {
 	var paren = code.indexOf('{', startOfMethodBody);
-	code = code.substring(0, paren + 1) + '\n // This is your main method\n    debugger;\n' + code.substring(paren + 1);
+	code = code.substring(0, paren + 1) + '\n    // This is your main method\n    // Click continue, and you will stop here\n    debugger;\n' + code.substring(paren + 1);
     }
 
 /*    var bootstrap = '\n\n\nvar result = main.apply(undefined, ' + JSON.stringify([message.actualParameters || {}]) + ');';
@@ -196,3 +196,11 @@ ws.on('open', function open() {
   ws.send(array, { binary: true, mask: true });
 });
 */
+
+process.on('exit', function onExit() {
+    ws.send(JSON.stringify({
+	type: 'disconnect'
+    }, function ack() {
+	ws.close();
+    }));
+});
