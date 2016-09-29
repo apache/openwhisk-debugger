@@ -24,8 +24,6 @@ wsk trigger create ${TRIGGER} >& /dev/null
 wsk action create ${ACTION} lib/echo.js >& /dev/null
 wsk rule create ${RULE} ${TRIGGER} ${ACTION} >& /dev/null
 
-wait
-
 wsk action invoke owdbg/invoker -p namespace "${NAMESPACE}" -p onDone_trigger ${TRIGGER} -p action $@
 
 echo -n "Your debugging session should now be active."

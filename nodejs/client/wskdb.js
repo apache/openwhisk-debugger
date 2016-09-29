@@ -2,10 +2,10 @@ var fs = require('fs'),
     tmp = require('tmp'),
     open = require('open'),
     path = require('path'),
+    repl = require('./lib/repl').repl,
     spawn = require('child_process').spawn,
     colors = require('colors'),
-    prompt = require('prompt'),
-    openwhisk = require('openwhisk'),
+    columnify = require('columnify'),
     WebSocket = require('ws'),
     expandHomeDir = require('expand-home-dir'),
     propertiesParser = require('properties-parser'),
@@ -23,13 +23,23 @@ var fs = require('fs'),
 var ws = new WebSocket(broker.host + broker.path);
 
 ws.on('open', function open() {
-    console.log('The wskdb client is ready to debug!');
+    console.log('Welcome to the OpenWhisk Debugger');
+    console.log();
 
-    var key = propertiesParser.read(expandHomeDir('~/.wskprops'))['AUTH'];
+    var wskprops = propertiesParser.read(expandHomeDir('~/.wskprops'));
+    var key = wskprops['AUTH'];
     ws.send(JSON.stringify({
 	type: 'init',
 	key: key
     }));
+
+    var keepAlive = setInterval(function poke() {
+	ws.send(JSON.stringify({
+	    type: 'keep-alive'
+	}));
+    }, 5000);
+
+    repl(wskprops);
 });
 
 ws.on('close', function() {
@@ -50,16 +60,8 @@ ws.on('message', function(data, flags) {
 	    console.log('Debug session requested');
 	    //console.log(JSON.stringify(message, undefined, 4));
 
-	    var keepAlive = setInterval(function poke() {
-		ws.send(JSON.stringify({
-		    type: 'keep-alive'
-		}));
-	    }, 5000);
-	    
 	    function done(err, result) {
 		console.log('Finishing up this debug session');
-
-		clearInterval(keepAlive);
 
 		ws.send(JSON.stringify({
 		    type: err ? 'circuit-breaker' : 'end',
@@ -98,7 +100,6 @@ ws.on('message', function(data, flags) {
 });
 
 function debugDebug(message, ws, done) {
-    prompt.start();
     prompt.get({
 	name: 'result', description: 'Return value',
 	conform: function(result) {
@@ -198,9 +199,14 @@ ws.on('open', function open() {
 */
 
 process.on('exit', function onExit() {
-    ws.send(JSON.stringify({
-	type: 'disconnect'
-    }, function ack() {
-	ws.close();
-    }));
+    try {
+	console.log("Goodbye!".red);
+
+	ws.send(JSON.stringify({
+	    type: 'disconnect'
+	}, function ack() {
+	    ws.close();
+	}));
+    } catch (e) {
+    }
 });
