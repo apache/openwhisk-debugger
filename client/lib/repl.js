@@ -1,5 +1,6 @@
 var prompt = require('inquirer'),
-    rewriter = require('./rewriter');
+    rewriter = require('./rewriter'),
+    columnify = require('columnify');
 
 var help = {
     handler: function help() {
