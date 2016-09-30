@@ -4,9 +4,14 @@ This project currently supports debugging NodeJS actions on your laptop.
 
 ## Usage
 
-Start the debug client:
+First, for now, you will need to get the invoker action into your namespace:
 ```
-% cd client; ./wskdb
+% (cd invoker; ./init.sh)
+```
+
+Next, start the debug client:
+```
+% (cd client; ./wskdb)
 Welcome to the OpenWhisk Debugger
 
 ? (wskdb)
