@@ -44,8 +44,19 @@ function setupOpenWhisk(wskprops) {
 function errorWhile(inOperation, callback) {
     return function(err) {
 	console.error('Error ' + inOperation);
+	console.error(err);
 	callback();
     };
+}
+
+function ok(next) {
+    return function() {
+	console.log('ok');
+	next();
+    };
+}
+function ok_(next) {
+    ok(next)();
 }
 
 /**
@@ -77,13 +88,74 @@ exports.listToConsole = function listToConsole(wskprops, next) {
     console.log('Available actions:'.blue);
 
     function print(actions) {
-	actions.forEach(function(action) {
-	    console.log('    ', action.name);
-	});
-	next();
+	actions.forEach(action => console.log('    ', action.name));
+	ok_(next);
     }
 
     exports.list(wskprops, print);
+};
+
+/**
+ * Create an action
+ *
+ */
+exports.create = function create(wskprops, next, name) {
+    var questions = [];
+    if (!name) {
+	questions.push({ name: 'name', message: 'Choose a name for your new action' });
+    }
+    questions.push({ name: 'kind', type: 'list',
+		     message: 'Which runtime do you want to use?',
+		     choices: ['nodejs', 'swift', 'python' ]
+		   });
+    questions.push({ name: 'code', type: 'editor',
+		     message: 'Please provide the function body for your new action',
+		     default: function(response) {
+			 if (response.kind == 'nodejs') return 'function main(params) {\n    return { message: \'hello\' };\n}\n'
+			 else if (response.kind == 'swift') return 'func main(args: [String:Any]) -> [String:Any] {\n      return [ "message" : "Hello world" ]\n}\n'
+			 else return 'import sys\n\ndef main(dict):\n    return { \'message\': \'Hello world\' }\n'
+		     }
+		   });
+
+    require('inquirer')
+	.prompt(questions)
+	.then(response => {
+	      return setupOpenWhisk(wskprops).actions.create({
+		  actionName: name || response.name,
+		  action: {
+		      exec: {
+			  kind: response.kind,
+			  code: response.code
+		      }
+		  }
+	      });
+	}).then(ok(next), errorWhile('creating action', next));
+};
+
+/**
+ * Delete an action
+ *
+ */
+exports.deleteAction = function deleteAction(wskprops, next, name) {
+    var ow = setupOpenWhisk(wskprops);
+
+    function doDelete(name) {
+	ow.actions.delete({ actionName: name })
+	    .then(ok(next), errorWhile('deleting action', next));
+    }
+    
+    if (!name) {
+	_list(ow, function(L) {
+	    require('inquirer')
+		.prompt([{ name: 'name', type: 'list',
+			   message: 'Which action do you wish to delete',
+			   choices: L.map(function(action) { return action.name; })
+			 }])
+		.then(function(response) { doDelete(response.name); });
+	});
+    } else {
+	doDelete(name);
+    }
 };
 
 /**
@@ -120,19 +192,15 @@ exports.clean = function clean(wskprops, next) {
 	});
     }
 
-    function allDone() {
-	console.log('ok'.blue);
-	next();
-    }
     Promise.all([cleanType('action'),
 		 cleanType('trigger'),
 		 cleanType('package')
 		])
 	.then(function() {
 	    cleanType('rule')
-		.then(allDone,
-		      errorWhile('cleaning rules', allDone))
-	}, errorWhile('cleaning actions and triggers', allDone));
+		.then(ok(next),
+		      errorWhile('cleaning rules', next))
+	}, errorWhile('cleaning actions and triggers', next));
 };
 
 /**
@@ -164,7 +232,7 @@ function splice(ow, entity, entityNamespace, next) {
 	    .then(function() {
 		ow.rules
 		    .create({ ruleName: names.ruleName, trigger: names.triggerName, action: names.continuationName })
-		    .then(function() { next(names); },
+		    .then(ok(function() { next(names); }),
 			  errorWhile('attaching to action', next));
 	    });
     } catch (e) {
@@ -228,7 +296,7 @@ exports.attach = function attach(wskprops, next, entity, option) {
 		var counter = entities.length;
 		function countDown() {
 		    if (--counter <= 0) {
-			next();
+			ok_(next);
 		    }
 		}
 		entities.forEach(function(otherEntity) {

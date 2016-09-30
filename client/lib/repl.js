@@ -60,6 +60,17 @@ var clean = {
     description: "Clean up debugging artifacts",
     synchronous: true
 };
+var create = {
+    handler: rewriter.create,
+    description: "Create an action",
+    synchronous: true
+};
+var deleteAction = {
+    handler: rewriter.deleteAction,
+    description: "Delete an action",
+    synchronous: true
+};
+
 
 var commandHandlers = {
     list: list,
@@ -81,6 +92,9 @@ var commandHandlers = {
 
     clean: clean,
     c: clean,
+
+    create: create,
+    delete: deleteAction,
 
     help: help,
     h: help,
