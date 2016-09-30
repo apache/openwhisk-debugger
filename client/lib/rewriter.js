@@ -1,6 +1,6 @@
 var uuid = require('uuid'),
     openwhisk = require('openwhisk'),
-    invokerPackageNamespace = undefined, // this is currently housed in the user's namespace
+    invokerPackageNamespace = 'nickm@us.ibm.com_canary-advisor', // this is currently housed in one of nick's namespace
     invokerPackageName = 'owdbg',
     invokerActionName = 'invoker',
     invoker = invokerPackageName + '/' + invokerActionName,
@@ -152,7 +152,7 @@ function splice(ow, entity, entityNamespace, next) {
 		     ow.packages.create({ packageName: names.debugStubName,
 					  package: {
 					      binding: {
-						  namespace: invokerPackageNamespace || entityNamespace,
+						  namespace: invokerPackageNamespace,
 						  name: invokerPackageName
 					      },
 					      parameters: [{ key: 'action', value: entity },
