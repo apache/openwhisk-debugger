@@ -28,6 +28,7 @@ var help = {
 };
 var attach = {
     handler: rewriter.attach,
+    enumerate: rewriter.list,
     description: "Attach to an action",
     synchronous: true
 };
@@ -41,22 +42,46 @@ var exit = {
 	//console.log("Cleaning up".red);
 	rewriter.detachAll(wskprops, process.exit);
     },
-    description: "Quit the debugger"
+    description: "Quit the debugger",
+    synchronous: true
 };
 var invoke = {
     handler: rewriter.invoke,
     description: "Invoke an action",
     synchronous: true
 };
+var list = {
+    handler: rewriter.listToConsole,
+    description: "List available actions",
+    synchronous: true
+};
+var clean = {
+    handler: rewriter.clean,
+    description: "Clean up debugging artifacts",
+    synchronous: true
+};
 
 var commandHandlers = {
+    list: list,
+    l: list,
+    
     invoke: invoke,
+    i: invoke,
+
     attach: attach,
+    a: attach,
+
     detach: detach,
+    d: detach,
+
     exit: exit,
     quit: exit,
     e: exit,
     q: exit,
+
+    clean: clean,
+    c: clean,
+
     help: help,
     h: help,
     '?': help
@@ -75,13 +100,19 @@ function repl(wskprops) {
 	var handler = commandHandlers[command];
 
 	if (handler.synchronous) {
+	    // the second parameter is the call back to the repl
+	    // when done with the synchronous operation
 	    commandLine.unshift(repl.bind(undefined, wskprops));
 	}
+
+	// the first parameter is wskprops
 	commandLine.unshift(wskprops);
 
+	// call to the handler!
 	handler.handler.apply(undefined, commandLine);
 
 	if (!handler.synchronous) {
+	    // if async, then restart the repl right away
 	    repl(wskprops);
 	}
     });

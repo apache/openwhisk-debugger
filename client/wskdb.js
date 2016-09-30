@@ -18,7 +18,7 @@ var repl = require('./lib/repl').repl,
 var ws = new WebSocket(broker.host + broker.path);
 
 ws.on('open', function open() {
-    console.log('Welcome to the OpenWhisk Debugger');
+    console.log('Welcome to the OpenWhisk Debugger'.red);
     console.log();
 
     var wskprops = propertiesParser.read(expandHomeDir('~/.wskprops'));
@@ -33,6 +33,21 @@ ws.on('open', function open() {
 	    type: 'keep-alive'
 	}));
     }, 5000);
+
+    process.on('exit', function onExit() {
+    try {
+	console.log('Goodbye!'.red);
+	clearTimer(keepAlive);
+
+	ws.send(JSON.stringify({
+	    type: 'disconnect'
+	}, function ack() {
+	    ws.close();
+	}));
+    } catch (e) {
+    }
+});
+
 
     repl(wskprops);
 });
@@ -56,7 +71,7 @@ ws.on('message', function(data, flags) {
 	    //console.log(JSON.stringify(message, undefined, 4));
 
 	    function done(err, result) {
-		console.log('Finishing up this debug session');
+		// console.log('Finishing up this debug session');
 
 		ws.send(JSON.stringify({
 		    type: err ? 'circuit-breaker' : 'end',
@@ -106,15 +121,3 @@ ws.on('open', function open() {
 });
 */
 
-process.on('exit', function onExit() {
-    try {
-	console.log("Goodbye!".red);
-
-	ws.send(JSON.stringify({
-	    type: 'disconnect'
-	}, function ack() {
-	    ws.close();
-	}));
-    } catch (e) {
-    }
-});
