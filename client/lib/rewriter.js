@@ -55,7 +55,7 @@ function errorWhile(inOperation, callback) {
 var Namer = {
     prefix: '___debug___',
     name: function name(extra) {
-	return Namer.prefix + (extra ? extra + '-' : "") + uuid.v4();
+	return Namer.prefix + (extra ? extra + '-' : '') + uuid.v4();
     },
     isDebugArtifact: function(name) {
 	return name.indexOf(Namer.prefix) == 0;
@@ -209,8 +209,8 @@ function spliceSequence(ow, sequence, entity, entityNamespace, names) {
  * Attach to the given entity, allowing for debugging its invocations
  *
  */
-exports.attach = function attach(wskprops, next, entity) {
-    console.log('Attaching'.blue + ' to ' + entity);
+exports.attach = function attach(wskprops, next, entity, option) {
+    console.log('Attaching'.blue + ' to ' + entity + (option ? ' with option ' + option : ''));
 
     try {
 	var entityNamespace = wskprops['NAMESPACE'];
@@ -218,6 +218,12 @@ exports.attach = function attach(wskprops, next, entity) {
 
 	console.log('   Creating action trampoline'.green);
 	splice(ow, entity, entityNamespace, function afterSplice(names) {
+	    if (option === '--action-only' || option === '--ao' || option == '-ao') {
+		//
+		// user asked not to instrument any rules or sequences
+		//
+		return next();
+	    }
 	    _list(ow, function onList(entities, ow) {
 		var counter = entities.length;
 		function countDown() {

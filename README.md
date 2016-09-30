@@ -30,3 +30,10 @@ Attaching to foo
    Creating action trampoline
    Creating sequence splice seq
 ```
+
+If you wish to limit the instrumentation to the action, avoiding any containing rules or sequences:
+```
+? (wskdb) attach foo --action-only
+Attaching to foo
+   Creating action trampoline
+```
