@@ -4,15 +4,29 @@ This project currently supports debugging NodeJS actions on your laptop.
 
 ## Usage
 
-First, start a debug client:
+Start the debug client:
 ```
-wskdb
+% cd client; ./wskdb
+Welcome to the OpenWhisk Debugger
+
+? (wskdb)
 ```
 
-Then, every time you want to debug an action, invoke it via the wrapper script:
+You will now be in a REPL. Issue `help` to see the list of available commands. 
 
+# Invoking an action
+The syntax here is almost identical to that of the `wsk` CLI.
 ```
-% wskinvoke.sh myaction -p param1Name param1Value -p param2Name param2Value
+? (wskdb) invoke actionName -p param1 value1 -p param2 value2
 ```
 
-i.e. invoke an action as you would normally, except making sure to use the invoke wrapper script provided in this repo.
+If you haven't yet attached to the action you are invoking, the invocation will proceed as if you weren't in the debugger, and had issued a blocking invocation from the CLI.
+
+# Attaching to an action
+Say for example you wish to attach to an action `foo`, and this action occurs in a sequence `seq`.
+```
+? (wskdb) attach foo
+Attaching to foo
+   Creating action trampoline
+   Creating sequence splice seq
+```
