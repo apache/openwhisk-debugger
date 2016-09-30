@@ -11,6 +11,7 @@ var uuid = require('uuid'),
 
 /** the dictionary of live attachments to actions */
 var attached = {};
+var created = {};
 
 function echoContinuation(entity, entityNamespace) {
     return {
@@ -88,7 +89,7 @@ exports.listToConsole = function listToConsole(wskprops, next) {
     console.log('Available actions:'.blue);
 
     function print(actions) {
-	actions.forEach(action => console.log('    ', action.name));
+	actions.forEach(action => console.log('    ', action.name[created[action.name] ? 'green' : 'reset']));
 	ok_(next);
     }
 
@@ -129,7 +130,9 @@ exports.create = function create(wskprops, next, name) {
 		      }
 		  }
 	      });
-	}).then(ok(next), errorWhile('creating action', next));
+	})
+	.then((action) => created[action.name] = true)
+	.then(ok(next), errorWhile('creating action', next));
 };
 
 /**
@@ -141,6 +144,7 @@ exports.deleteAction = function deleteAction(wskprops, next, name) {
 
     function doDelete(name) {
 	ow.actions.delete({ actionName: name })
+	    .then((action) => delete created[action.name])
 	    .then(ok(next), errorWhile('deleting action', next));
     }
     
@@ -232,7 +236,7 @@ function splice(ow, entity, entityNamespace, next) {
 	    .then(function() {
 		ow.rules
 		    .create({ ruleName: names.ruleName, trigger: names.triggerName, action: names.continuationName })
-		    .then(ok(function() { next(names); }),
+		    .then(function() { next(names); },
 			  errorWhile('attaching to action', next));
 	    });
     } catch (e) {
@@ -292,7 +296,7 @@ exports.attach = function attach(wskprops, next, entity, option) {
 		//
 		return next();
 	    }
-	    _list(ow, function onList(entities, ow) {
+	    _list(ow, function onList(entities) {
 		var counter = entities.length;
 		function countDown() {
 		    if (--counter <= 0) {
@@ -373,7 +377,7 @@ exports.detach = function detach(wskprops, next, entity) {
 			.then(function(values) {
 			    //console.log('D3');
 			    ow.rules.delete(names).then(function() {
-				try { delete attached[entity]; next(); } catch (err) { errlog(5, true)(err); }
+				try { delete attached[entity]; ok_(next()); } catch (err) { errlog(5, true)(err); }
 			    }, errlog(4));
 			}, errlog(3));
 		} catch (err) { errlog(2, true)(err); }
