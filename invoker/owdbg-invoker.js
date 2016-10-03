@@ -74,4 +74,4 @@ function main(params) {
 	});
     });
 }
-main({'broker':'https://owdbg.mybluemix.net','action':'foo/bar15'})
+//main({'broker':'https://owdbg.mybluemix.net','action':'foo/bar15'})
