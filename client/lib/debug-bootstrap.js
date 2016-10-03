@@ -4,7 +4,7 @@ var openwhisk = require('openwhisk'),
 	path: '/api/v1'
     };
 
-module.exports = function(key, namespace, triggerName) {
+module.exports = function(key, namespace, triggerName, breakAtExit) {
     return function(main, actualParameters) {
 	var result = main(actualParameters || {});
 
@@ -13,7 +13,13 @@ module.exports = function(key, namespace, triggerName) {
 	    api_key: key,
 	    namespace: namespace
 	});
-	//	debugger;
+
+	// if you want to insert a breakpoint just before exit
+	if (breakAtExit) {
+	    debugger;
+	}
+
+	console.log('Returning ' + JSON.stringify(result, undefined, 4));
 
 	ow.triggers.invoke({
 	    triggerName: triggerName,
