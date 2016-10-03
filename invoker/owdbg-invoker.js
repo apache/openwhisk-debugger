@@ -4,8 +4,12 @@ function main(params) {
     return new Promise(function(resolve, reject) {
 	console.log('Invoking ' + JSON.stringify(actualParameters));
 
+	//
+	// remove debugging payload from the parameters we send to the debug session
+	//
 	var actualParameters = Object.assign({}, params);
 	delete actualParameters.action;
+	delete actualParameters.broker;
 	delete actualParameters.namespace;
 	delete actualParameters.onDone_trigger;
 	
