@@ -25,7 +25,7 @@ If you haven't yet attached to the action you are invoking, the invocation will 
 # Attaching to an action
 Say for example you wish to attach to an action `foo`, and this action occurs in a sequence `seq`.
 ```
-? (wskdb) attach foo
+(wskdb) attach foo
 Attaching to foo
    Creating action trampoline
    Creating sequence splice seq
@@ -33,7 +33,7 @@ Attaching to foo
 
 If you wish to limit the instrumentation to the action, avoiding any containing rules or sequences:
 ```
-? (wskdb) attach foo --action-only
+(wskdb) attach foo --action-only
 Attaching to foo
    Creating action trampoline
 ```

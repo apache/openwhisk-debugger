@@ -104,6 +104,7 @@ var commandHandlers = {
 function repl(wskprops) {
     prompt.prompt([{
 	name: 'command', message: '(wskdb)',
+	prefixMessage: '', // override the default question mark prefix
 	validate: function(line) {
 	    var commandLine = line.split(/\s+/);
 	    return line.length == 0 || commandHandlers[commandLine[0]] ? true : "Invalid command";
