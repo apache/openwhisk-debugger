@@ -10,7 +10,7 @@ var uuid = require('uuid'),
     };
 
 /** the dictionary of live attachments to actions */
-var attached = {};
+var attached = {}, chainAttached = {};
 var created = {};
 
 function echoContinuation(entity, entityNamespace) {
@@ -46,7 +46,7 @@ function errorWhile(inOperation, callback) {
     return function(err) {
 	console.error('Error ' + inOperation);
 	console.error(err);
-	callback();
+	callback && callback();
     };
 }
 
@@ -207,6 +207,46 @@ exports.clean = function clean(wskprops, next) {
 	}, errorWhile('cleaning actions and triggers', next));
 };
 
+function createUpstreamAdapterNames(continuationName) {
+    return {
+	ruleName: Namer.name('continuation-rule'),
+	triggerName: Namer.name('continuation-trigger'),
+	continuationName: continuationName || Namer.name('continuation-action'),
+	createContinuationPlease: !continuationName,
+	debugStubName: Namer.name('stub')
+    };
+}
+
+function createUpstreamAdapter(ow, actionBeingDebugged, actionBeingDebuggedNamespace, names) {
+    try {
+	var work = [
+	    ow.triggers.create(names),
+	    ow.packages.create({ packageName: names.debugStubName,
+				 package: {
+				     binding: {
+					 namespace: invokerPackageNamespace,
+					 name: invokerPackageName
+				     },
+				     parameters: [{ key: 'action', value: actionBeingDebugged },
+						  { key: 'namespace', value: actionBeingDebuggedNamespace },
+						  { key: 'onDone_trigger', value: names.triggerName }
+						 ]
+				 }
+			       })
+	];
+	if (names.createContinuationPlease) {
+	    work.push(ow.actions.create({ actionName: names.continuationName, action: echoContinuation(actionBeingDebugged,
+												       actionBeingDebuggedNamespace) }));
+	}
+	return Promise.all(work)
+	    .then(() => ow.rules.create({ ruleName: names.ruleName, trigger: names.triggerName, action: names.continuationName }),
+		  errorWhile('creating upstream adapter part 1'))
+	    .then(() => names, errorWhile('creating upstream adapter part 2'));
+    } catch (e) {
+	console.error(e);
+    }
+}
+
 /**
  * Create a rule splice
  */
@@ -216,7 +256,7 @@ function splice(ow, entity, entityNamespace, next) {
 	    debugStubName: Namer.name('stub'),
 	    triggerName: Namer.name('continuation-trigger'),
 	    continuationName: Namer.name('continuation-action'),
-	    ruleName: Namer.name('continuation-rule'),
+	    ruleName: Namer.name('continuation-rule')
 	};
 
 	Promise.all([ow.triggers.create(names),
@@ -228,19 +268,22 @@ function splice(ow, entity, entityNamespace, next) {
 						  name: invokerPackageName
 					      },
 					      parameters: [{ key: 'action', value: entity },
-							   { key: 'namespace', value: entityNamespace }
+							   { key: 'namespace', value: entityNamespace },
+							   { key: 'onDone_trigger', value: names.triggerName }
 							  ]
 					  }
 					})
 		    ])
-	    .then(function() {
+	    .then(function onSuccessOfPart1() {
 		ow.rules
 		    .create({ ruleName: names.ruleName, trigger: names.triggerName, action: names.continuationName })
 		    .then(function() { next(names); },
 			  errorWhile('attaching to action', next));
-	    });
+	    }, errorWhile('attaching to action', next));
+
     } catch (e) {
 	console.error(e);
+	next();
     }
 }
 
@@ -255,10 +298,10 @@ function sequenceUses(maybeUsingEntity, entity, entityNamespace) {
 }
 
 function beforeSpliceSplitter(element, replacement, A) { A = A.slice(0, A.indexOf(element)); A.push(replacement); return A; }
-function afterSpliceSplitter(element, replacement, A) { A = A.slice(A.indexOf(element)); A[0] = replacement; return A; }
-function makeSequenceSplicePart(ow, sequence, splitter) {
+function afterSpliceSplitter(element, tackOnTheEnd, A) { A = A.slice(A.indexOf(element) + 1); return A; }
+function makeSequenceSplicePart(ow, name, sequence, splitter) {
     var opts = {
-	actionName: Namer.name('sequence-splice'),
+	actionName: name,
 	action: {
 	    exec: {
 		kind: sequence.exec.kind,
@@ -270,11 +313,48 @@ function makeSequenceSplicePart(ow, sequence, splitter) {
     return ow.actions.create(opts);
 }
 function spliceSequence(ow, sequence, entity, entityNamespace, names) {
+    try {
+	var finalBit = undefined/*{
+	    actionName: Namer.name('action'),
+	    action: echoContinuation(entity, entityNamespace, spliceNames.onDone_trigger)
+	};*/
+	
     var fqn = '/' + entityNamespace + '/' + entity;
+
+    var afterSpliceContinuation = Namer.name('sequence-splice-after');
+    var upstreamAdapterNames = createUpstreamAdapterNames(afterSpliceContinuation);
+
+	var beforeSpliceUpstream = '/' + entityNamespace + '/' + upstreamAdapterNames.debugStubName + '/' + invokerActionName;
+    //var afterSpliceContinuation = '/' + entityNamespace + '/' + upstreamAdapterNames.continuationName;
+
     return Promise.all([
-	makeSequenceSplicePart(ow, sequence, beforeSpliceSplitter.bind(undefined, fqn, names.debugStubName + '/' + invokerActionName)),
-	makeSequenceSplicePart(ow, sequence, afterSpliceSplitter.bind(undefined, fqn, '/' + entityNamespace + '/' + names.continuationName))
-    ]);
+	makeSequenceSplicePart(ow,
+			       Namer.name('sequence-splice-before'),
+			       sequence,
+			       beforeSpliceSplitter.bind(undefined, fqn, beforeSpliceUpstream)),   // before: _/--upstream
+	makeSequenceSplicePart(ow,
+			       afterSpliceContinuation,
+			       sequence,
+			       afterSpliceSplitter.bind(undefined, fqn, finalBit)) // after: -\__continuation
+
+    ]).then((beforeAndAfter) => { // a destructuring bind would clean this up
+	// after the breakpoint, continue with the afterSplice
+	return createUpstreamAdapter(ow, entity, entityNamespace, upstreamAdapterNames)
+	    .then(() => {
+		//
+		// this sequence splice uses its own downstream trigger, not the generic one from the action splice
+		//
+		return chainAttached[sequence.name] = {
+		    before: beforeAndAfter[0].name,
+		    after: beforeAndAfter[1].name,
+		    triggerName: upstreamAdapterNames.triggerName
+		};
+
+	    }, errorWhile('creating upstream adapter'));
+    }, errorWhile('splicing sequence'));
+    } catch (e) {
+	console.error(e);
+    }
 }
 
 /**
@@ -298,7 +378,7 @@ exports.attach = function attach(wskprops, next, entity, option) {
 	    }
 	    _list(ow, function onList(entities) {
 		var counter = entities.length;
-		function countDown() {
+		function countDown(names) {
 		    if (--counter <= 0) {
 			ok_(next);
 		    }
@@ -351,11 +431,30 @@ exports.detachAll = function detachAll(wskprops, next) {
 };
 
 exports.detach = function detach(wskprops, next, entity) {
+    if (!entity) {
+	var L = [];
+	for (var x in attached) { L.push(x); }
+	if (L.length === 0) {
+	    console.error("No attached actions detected");
+	    next();
+	} else {
+	    require('inquirer')
+		.prompt([{ name: 'name', type: 'list',
+			   message: 'From which action do you wish to detach',
+			   choices: L
+			 }])
+		.then(function(response) { doDetach(wskprops, next, response.name); });
+	}
+    } else {
+	doDetach(wskprops, next, entity);
+    }
+}
+function doDetach(wskprops, next, entity) {
     console.log('Detaching'.blue + ' from ' + entity);
 
     function errlog(idx, noNext) {
 	return function(err) {
-	    if (err.indexOf('HTTP 404') < 0) {
+	    if (err.indexOf && err.indexOf('HTTP 404') < 0) {
 		console.error('Error ' + idx, err);
 	    }
 	    if (!noNext) next();
@@ -366,18 +465,22 @@ exports.detach = function detach(wskprops, next, entity) {
     if (names) {
 	try {
 	    var ow = setupOpenWhisk(wskprops);
-	    //console.log('D1');
 	    ow.rules.disable(names).then(function() {
 		try {
-		    //console.log('D2');
+		    // first delete the action and rule and debug package
 		    Promise.all([ow.triggers.delete(names),
 				 ow.actions.delete({ actionName: names.continuationName }),
 				 ow.packages.delete({ packageName: names.debugStubName })
 				])
 			.then(function(values) {
-			    //console.log('D3');
+			    // then we can delete the rule
 			    ow.rules.delete(names).then(function() {
-				try { delete attached[entity]; ok_(next()); } catch (err) { errlog(5, true)(err); }
+				try {
+				    delete attached[entity];
+				    ok_(next);
+				} catch (err) {
+				    errlog(5, true)(err);
+				}
 			    }, errlog(4));
 			}, errlog(3));
 		} catch (err) { errlog(2, true)(err); }
@@ -388,6 +491,10 @@ exports.detach = function detach(wskprops, next, entity) {
     }
 };
 
+/**
+ * Invoke an action
+ *
+ */
 exports.invoke = function invoke() {
     try {
 	exports._invoke.apply(undefined, arguments);
@@ -413,8 +520,15 @@ exports._invoke = function invoke() {
     
     var attachedTo = attached[action];
     if (!attachedTo) {
-	invokeThisAction = action;
-	waitForThisAction = action;
+	var seq = chainAttached[action];
+	if (seq) {
+	    invokeThisAction = seq.before;
+	    waitForThisAction = seq.after;
+
+	} else {
+	    invokeThisAction = action;
+	    waitForThisAction = action;
+	}
 
     } else {
 	invokeThisAction = attachedTo.debugStubName + '/' + invokerActionName;
@@ -422,12 +536,12 @@ exports._invoke = function invoke() {
 	// these are now part of the debug stub binding
 	// params.action = action;
 	// params.namespace = namespace;
+	// params.onDone_trigger = attachedTo.triggerName;
 
-	params.onDone_trigger = attachedTo.triggerName;
 	waitForThisAction = attachedTo.continuationName;
     }
 
-    //console.log('PARAMS', invokeThisAction, params);
+    console.log('Invoking', invokeThisAction, waitForThisAction, params);
 
     var key = wskprops['AUTH'];
     var ow = setupOpenWhisk(wskprops);
@@ -440,13 +554,13 @@ exports._invoke = function invoke() {
     ow.actions.invoke({
 	actionName: invokeThisAction,
 	params: params
-    }).then(function(activation) {
+    }).then(function onSuccess(activation) {
 	if (activation && activation.activationId) {
 	    // successfully invoked
 	    if (!attachedTo) {
 		console.log('Successfully invoked with activationId', activation.activationId);
 	    } else {
-
+		// we'll wait for the result...
 	    }
 
 	    //
@@ -468,5 +582,8 @@ exports._invoke = function invoke() {
 		});
 	    }, 1000);
 	}
+    }, function onError(err) {
+	console.error('Unable to invoke your specified action');
+	next();
     });
 }
