@@ -106,9 +106,14 @@ function repl(wskprops) {
 	name: 'command', message: '(wskdb)',
 	validate: function(line) {
 	    var commandLine = line.split(/\s+/);
-	    return commandLine.length > 0 && commandHandlers[commandLine[0]] ? true : "Invalid command";
+	    return line.length == 0 || commandHandlers[commandLine[0]] ? true : "Invalid command";
 	}
     }]).then(function(response) {
+	if (response.command.length == 0) {
+	    // user hit return;
+	    return repl(wskprops);
+	}
+	
 	var commandLine = response.command.split(/\s+/);
 	var command = commandLine.shift();
 	var handler = commandHandlers[command];
