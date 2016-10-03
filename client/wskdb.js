@@ -12,8 +12,7 @@ var repl = require('./lib/repl').repl,
     broker = {
 	host: 'https://owdbg-broker.mybluemix.net',
 	path: '/ws/client/register'
-    },
-    continuations = require('./lib/continuations')(api);
+    };
 
 var ws = new WebSocket(broker.host + broker.path);
 
@@ -82,23 +81,27 @@ ws.on('message', function(data, flags) {
 
 		//ws.close();
 	    }
-	    function next(echoChamberNames) {
-		if (message.action && message.action.exec && message.action.exec.kind.indexOf('nodejs') >= 0) {
-		    debugNodeJS(message, ws, echoChamberNames, done);
-		} else {
-		    ws.send(JSON.stringify({
+	    function circuitBreaker() {
+		ws.send(JSON.stringify({
 			type: 'circuit-breaker',
 			key: message.key,
 			activationId: message.activationId,
-		    }));
-		}
+		}));
+	    }
+	    function next(echoChamberNames) {
 	    }
 	    var nextOnErr = done.bind(undefined, true);
 
 	    if (message.onDone_trigger) {
-		next({ trigger: message.onDone_trigger });
+		if (message.action && message.action.exec && message.action.exec.kind.indexOf('nodejs') >= 0) {
+		    debugNodeJS(message, ws, { trigger: message.onDone_trigger }, done);
+		} else {
+		    console.error('Unable to complete invocation: no action code to debug');
+		    circuitBreaker();
+		}
 	    } else {
-		continuations.makeEchoChamber(message.key, message.action.namespace, next, nextOnErr);
+		console.error('Unable to complete invocation: no onDone_trigger specified');
+		circuitBreaker();
 	    }
 
 	    break;
