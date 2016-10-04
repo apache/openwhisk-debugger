@@ -1,4 +1,5 @@
-var repl = require('./lib/repl').repl,
+var argv = require('argv'),
+    repl = require('./lib/repl').repl,
     colors = require('colors'),
     WebSocket = require('ws'),
     debugNodeJS = require('./lib/debug-nodejs').debug,
@@ -13,6 +14,11 @@ var repl = require('./lib/repl').repl,
 	host: 'https://owdbg-broker.mybluemix.net',
 	path: '/ws/client/register'
     };
+
+var commandLineOptions = argv
+    .option([{name: 'use-cli-debugger', short: 'c', type: 'string', description: 'Favor the CLI for debug sessions over a GUI'}])
+    .run()
+    .options;
 
 var ws = new WebSocket(broker.host + broker.path);
 
@@ -94,7 +100,7 @@ ws.on('message', function(data, flags) {
 
 	    if (message.onDone_trigger) {
 		if (message.action && message.action.exec && message.action.exec.kind.indexOf('nodejs') >= 0) {
-		    debugNodeJS(message, ws, { trigger: message.onDone_trigger }, done);
+		    debugNodeJS(message, ws, { trigger: message.onDone_trigger }, done, commandLineOptions);
 		} else {
 		    console.error('Unable to complete invocation: no action code to debug');
 		    circuitBreaker();
