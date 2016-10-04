@@ -90,7 +90,9 @@ exports.listToConsole = function listToConsole(wskprops, next, options) {
 
     function print(actions) {
 	actions
-	    .filter(action => (options && options == "--full") || !Namer.isDebugArtifact(action.name))
+	    .filter(action =>
+		    (options && (options == '--full' || options == '--f' || options == '-f'))
+		    || !Namer.isDebugArtifact(action.name))
 	    .forEach(action => console.log('    ', action.name[created[action.name] ? 'green' : 'reset']));
 
 	ok_(next);
