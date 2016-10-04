@@ -1,16 +1,17 @@
 var fs = require('fs'),
     tmp = require('tmp'),
+    open = require('open'),
     path = require('path'),
     spawn = require('child_process').spawn;
 
-exports.debug = function debugNodeJS(message, ws, echoChamberNames, done) {
+exports.debug = function debugNodeJS(message, ws, echoChamberNames, done, commandLineOptions) {
     try {
-	exports._debug(message, ws, echoChamberNames, done);
+	exports._debug(message, ws, echoChamberNames, done, commandLineOptions);
     } catch (e) {
 	console.error(e);
     }
 }
-exports._debug = function debugNodeJS(message, ws, echoChamberNames, done) {
+exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, commandLineOptions) {
     var code = message.action.exec.code;
 
     var r = new RegExp(/main[\s]*\([^\)]*\)/)
@@ -43,37 +44,95 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done) {
 	    env['NODE_PATH'] = path.join(process.cwd(), 'node_modules')
 		+ ':' + path.join(process.cwd(), 'lib');
 
-	    var spawnOpts = {
-		cwd: process.cwd(),
-		// stdio: ['inherit', 'inherit', 'inherit'], // for debugging
-		env: env
-	    };
-	    // console.log('SPAWN ' + JSON.stringify(spawnOpts, undefined, 4));
-	    //var child = spawn('node', ['debug', tmpFilePath], spawnOpts);
-	    var child = spawn(path.join('node_modules', '.bin', 'node-debug'), [tmpFilePath], spawnOpts);
+	    function trySpawnWithBrowser(webPort, debugPort) {
+		var spawnOpts = {
+		    cwd: process.cwd(),
+		    // stdio: ['inherit', 'inherit', 'inherit'], // for debugging
+		    env: env
+		};
+		var child = spawn(path.join('node_modules', '.bin', 'node-debug'),
+				  ['--cli', '--debug-port', debugPort, '--web-port', webPort, tmpFilePath],
+				  spawnOpts);
+		var child2;
+		var addrInUse = false;
+		
+		child.stdout.on('data', function(data) {
+		    if (!child2) {
+			var url = 'http://127.0.0.1:' + webPort + '/?port=' + debugPort;
+			child2 = open(url, 'Google Chrome');
+
+			console.log('');
+			console.log('');
+			console.log('\tVisit ' + url.underline.blue + ' in the ' + 'Chrome'.red + ' browser that just popped up');
+			console.log('\tClose that browser tab to complete your debugging session'.bold);
+			console.log('');
+			console.log('');
+		    }
+		});
+
+		// for debugging the child invocation:
+		child.stderr.on('data', (message) => {
+		    message = message.toString();
+		    if (message.indexOf('EADDRINUSE') >= 0) {
+			//
+			// oops, we'll need to try another pair of
+			// ports. we'll do son in the on('exit')
+			// handler below
+			//
+			addrInUse = true;
+		    } else if (message.indexOf('ResourceTree') < 0
+			       && message.indexOf('Assertion failed') < 0) {
+			//
+			// ignore some internal errors in node-inspector
+			//
+			console.error('stderr: ' + message)
+		    }
+		});
+
 	    /*var child = spawn('node', ['--debug', '--debug-brk', tmpFilePath], spawnOpts);
 	      console.log('SPAWN2');
 	      var child2 = spawn(path.join('node_modules', '.bin', 'node-inspector'), spawnOpts);
 	      console.log('OPEN');
 	      var child3 = open('http://127.0.0.1:8080/?port=5858', 'Google Chrome');*/
 
-	    /*child.stderr.on('data', function(data) {
-	      console.log(data);
-	      });*/
-	    console.log("");
-	    console.log("");
-	    console.log("\tVisit " + "http://127.0.0.1:8080/?port=5858".underline.blue + " in the " + "Chrome".red + " browser that just popped up");
-	    console.log("\tClose that browser tab to complete your debugging session".bold);
-	    console.log("");
-	    console.log("");
-	    function cleanUpSubprocesses(err, stdout, stderr) {
-		/*console.log('ERR: ' + err);
-		  console.log('stdout: ' + stdout);
-		  console.log('stderr: ' + stderr);*/
-		tmpfileCleanupCallback();
-		done();
+		function cleanUpSubprocesses(err, stdout, stderr) {
+		    if (err) {
+			if (addrInUse) {
+			    trySpawnWithBrowser(webPort + 1, debugPort + 1);
+			} else {
+			    console.log('Error launching debugger', err);
+			}
+		    }
+		    if (!addrInUse) {
+			try { tmpfileCleanupCallback(); } catch (e) { }
+			done();
+		    }
+		}
+		child.on('close', cleanUpSubprocesses);
+	    } /* end of trySpawnWithBrowser */
+
+	    function spawnWithCLI() {
+		var spawnOpts = {
+		    cwd: process.cwd(),
+		    stdio: ['inherit', 'inherit', 'inherit'],
+		    env: env
+		};
+		var child = spawn('/usr/bin/env'
+				  ['node', 'debug', tmpFilePath],
+				  spawnOpts);
+		child.on('exit', (message) => console.error(message));
+
+		child.on('close', () => {
+		    try { tmpfileCleanupCallback(); } catch (e) { }
+		    done();
+		});
 	    }
-	    child.on('close', cleanUpSubprocesses);
+
+	    if (commandLineOptions['use-cli-debugger']) {
+		spawnWithCLI();
+	    } else {
+		trySpawnWithBrowser(8080, 5858);
+	    }
 	});
 	} catch (e) {
 	    console.error(e);
