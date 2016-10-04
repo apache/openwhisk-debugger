@@ -85,11 +85,14 @@ function _list(ow, callback, type) {
 	      errorWhile('fetching actions', callback));
 }
 
-exports.listToConsole = function listToConsole(wskprops, next) {
+exports.listToConsole = function listToConsole(wskprops, next, options) {
     console.log('Available actions:'.blue);
 
     function print(actions) {
-	actions.forEach(action => console.log('    ', action.name[created[action.name] ? 'green' : 'reset']));
+	actions
+	    .filter(action => (options && options == "--full") || !Namer.isDebugArtifact(action.name))
+	    .forEach(action => console.log('    ', action.name[created[action.name] ? 'green' : 'reset']));
+
 	ok_(next);
     }
 
@@ -541,7 +544,7 @@ exports._invoke = function invoke() {
 	waitForThisAction = attachedTo.continuationName;
     }
 
-    console.log('Invoking', invokeThisAction, waitForThisAction, params);
+    console.log('Invoking', action);
 
     var key = wskprops['AUTH'];
     var ow = setupOpenWhisk(wskprops);
