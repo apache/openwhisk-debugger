@@ -85,14 +85,13 @@ function _list(ow, callback, type) {
 	      errorWhile('fetching actions', callback));
 }
 
-exports.listToConsole = function listToConsole(wskprops, next, options) {
-    console.log('Available actions:'.blue);
+exports.listToConsole = function listToConsole(wskprops, options, next) {
+    if (options.help) return next();
 
+    console.log('Available actions:'.blue);
     function print(actions) {
 	actions
-	    .filter(action =>
-		    (options && (options == '--full' || options == '--f' || options == '-f'))
-		    || !Namer.isDebugArtifact(action.name))
+	    .filter(action => options && options.full || !Namer.isDebugArtifact(action.name))
 	    .forEach(action => console.log('    ', action.name[created[action.name] ? 'green' : 'reset']));
 
 	ok_(next);
@@ -366,8 +365,10 @@ function spliceSequence(ow, sequence, entity, entityNamespace, names) {
  * Attach to the given entity, allowing for debugging its invocations
  *
  */
-exports.attach = function attach(wskprops, next, entity, option) {
-    console.log('Attaching'.blue + ' to ' + entity + (option ? ' with option ' + option : ''));
+exports.attach = function attach(wskprops, options, next, entity) {
+    if (options.help) return next();
+
+    console.log('Attaching'.blue + ' to ' + entity);
 
     try {
 	var entityNamespace = wskprops['NAMESPACE'];
@@ -375,7 +376,7 @@ exports.attach = function attach(wskprops, next, entity, option) {
 
 	console.log('   Creating action trampoline'.green);
 	splice(ow, entity, entityNamespace, function afterSplice(names) {
-	    if (option === '--action-only' || option === '--ao' || option == '-ao') {
+	    if (options && options['action-only']) {
 		//
 		// user asked not to instrument any rules or sequences
 		//

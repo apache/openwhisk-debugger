@@ -1,4 +1,5 @@
-var prompt = require('inquirer'),
+var argv = require('argv'),
+    prompt = require('inquirer'),
     rewriter = require('./rewriter'),
     columnify = require('columnify');
 
@@ -30,7 +31,8 @@ var attach = {
     handler: rewriter.attach,
     enumerate: rewriter.list,
     description: "Attach to an action",
-    synchronous: true
+    synchronous: true,
+    options: [{ name: 'action-only', short: 'a', type: 'string', description: 'Instrument just the action, not any rules or sequences in which it takes part' }]
 };
 var detach = {
     handler: rewriter.detach,
@@ -53,7 +55,8 @@ var invoke = {
 var list = {
     handler: rewriter.listToConsole,
     description: "List available actions",
-    synchronous: true
+    synchronous: true,
+    options: [{ name: 'full', short: 'f', type: 'string', description: 'Show all actions, including debugging artifacts' }]
 };
 var clean = {
     handler: rewriter.clean,
@@ -119,17 +122,36 @@ function repl(wskprops) {
 	var command = commandLine.shift();
 	var handler = commandHandlers[command];
 
+	var options;
+	if (handler.options) {
+	    argv.clear();
+	    argv.description = 'Usage: ' + command + ' [options]';
+	    argv.options.help.example = "";
+	    argv.options.help.onset = (args) => {
+		argv.help(args.mod);
+	    }
+	    options = argv.option(handler.options).run(commandLine).options;
+	}
+
 	if (handler.synchronous) {
 	    // the second parameter is the call back to the repl
 	    // when done with the synchronous operation
 	    commandLine.unshift(repl.bind(undefined, wskprops));
 	}
 
+	if (handler.options) {
+	    commandLine.unshift(options);
+	}
+
 	// the first parameter is wskprops
 	commandLine.unshift(wskprops);
 
 	// call to the handler!
-	handler.handler.apply(undefined, commandLine);
+	try {
+	    handler.handler.apply(undefined, commandLine);
+	} catch (e) {
+	    console.error(e);
+	}
 
 	if (!handler.synchronous) {
 	    // if async, then restart the repl right away
