@@ -16,7 +16,8 @@ var argv = require('argv'),
     };
 
 var commandLineOptionsConfig = [
-    {name: 'use-cli-debugger', short: 'c', type: 'string', description: 'Favor the CLI for debug sessions over a GUI'}
+    {name: 'use-cli-debugger', short: 'c', type: 'string', description: 'Favor the CLI for debug sessions over a GUI'},
+    {name: 'no-color', type: 'string', description: 'Avoid using console colors'} // this comes from the colors module
 ];
 var commandLineOptions = argv
     .option(commandLineOptionsConfig)
@@ -30,7 +31,7 @@ ws.on('open', function open() {
 
     if (commandLineOptions) {
 	for (var x in commandLineOptions) {
-	    console.log('    + ' + commandLineOptionsConfig.find((o) => o.name == x).description);
+	    console.log(('    + ' + commandLineOptionsConfig.find((o) => o.name == x).description).dim);
 	}
     }
     console.log();
