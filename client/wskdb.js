@@ -15,8 +15,11 @@ var argv = require('argv'),
 	path: '/ws/client/register'
     };
 
+var commandLineOptionsConfig = [
+    {name: 'use-cli-debugger', short: 'c', type: 'string', description: 'Favor the CLI for debug sessions over a GUI'}
+];
 var commandLineOptions = argv
-    .option([{name: 'use-cli-debugger', short: 'c', type: 'string', description: 'Favor the CLI for debug sessions over a GUI'}])
+    .option(commandLineOptionsConfig)
     .run()
     .options;
 
@@ -24,6 +27,12 @@ var ws = new WebSocket(broker.host + broker.path);
 
 ws.on('open', function open() {
     console.log('Welcome to the OpenWhisk Debugger'.red);
+
+    if (commandLineOptions) {
+	for (var x in commandLineOptions) {
+	    console.log('    + ' + commandLineOptionsConfig.find((o) => o.name == x).description);
+	}
+    }
     console.log();
 
     var wskprops = propertiesParser.read(expandHomeDir('~/.wskprops'));
