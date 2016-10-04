@@ -24,6 +24,8 @@ module.exports = function(key, namespace, triggerName, breakAtExit) {
 	ow.triggers.invoke({
 	    triggerName: triggerName,
 	    params: result
+	}).then(function() {
+	    console.log('Debug session complete');
 	});
     };
 };
