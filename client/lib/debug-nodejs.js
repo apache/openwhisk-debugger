@@ -40,6 +40,8 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 	// console.log('TMP ' + tmpFilePath);
 	try {
 	fs.write(fd, code, 0, 'utf8', function onFileWriteCompletion(err, written, string) {
+
+            // we need to update the NODE_PATH env var, to add our local modules
 	    var env = Object.assign({}, process.env);
 	    env['NODE_PATH'] = path.join(process.cwd(), 'node_modules')
 		+ ':' + path.join(process.cwd(), 'lib');
@@ -117,15 +119,20 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		    stdio: ['inherit', 'inherit', 'inherit'],
 		    env: env
 		};
-		var child = spawn('/usr/bin/env'
-				  ['node', 'debug', tmpFilePath],
-				  spawnOpts);
-		child.on('exit', (message) => console.error(message));
-
-		child.on('close', () => {
-		    try { tmpfileCleanupCallback(); } catch (e) { }
+		try {
+		    var child = spawn('node',
+				      ['debug', tmpFilePath],
+				      spawnOpts);
+		    child.on('exit', (message) => console.error('EXIT',message));
+		    
+		    child.on('close', () => {
+			try { tmpfileCleanupCallback(); } catch (e) { }
+			done();
+		    });
+		} catch (e) {
+		    console.error('Error spawning debugger', e);
 		    done();
-		});
+		}
 	    }
 
 	    if (commandLineOptions['use-cli-debugger']) {
