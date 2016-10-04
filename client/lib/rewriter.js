@@ -547,6 +547,10 @@ exports._invoke = function invoke() {
     }
 
     console.log('Invoking', action);
+    if (!action) {
+	console.error('Please provide an action to invoke'.red);
+	return next();
+    }
 
     var key = wskprops['AUTH'];
     var ow = setupOpenWhisk(wskprops);
