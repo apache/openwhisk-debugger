@@ -302,6 +302,12 @@ function doPar(ow, type, entity, next, each) {
  */
 exports.attach = function attach(wskprops, options, next, entity) {
     if (options.help) {
+	// the user passed -h or --help, so there is nothing to do here
+	return next();
+    }
+    if (!entity) {
+	console.error('Error: Please specify an entity ');
+	console.error();
 	return next();
     }
 
@@ -317,7 +323,7 @@ exports.attach = function attach(wskprops, options, next, entity) {
 		//
 		// user asked not to instrument any rules or sequences
 		//
-		return next();
+		return ok_(next);
 	    }
 	    doPar(ow, 'action', entity, next, (otherEntityWithDetails, countDown) => {
 		if (SequenceRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
@@ -461,6 +467,7 @@ exports.invoke = function invoke() {
 exports._invoke = function invoke() {
     var args = Array.prototype.slice.call(arguments);
     var wskprops = args.shift();
+    var eventBus = args.shift();
     var namespace = wskprops.NAMESPACE;
     var next = args.shift();
     var action = args.shift();
@@ -534,7 +541,8 @@ exports._invoke = function invoke() {
 			    clearInterval(timer);
 			    owForActivations.activations.get({ activation: activation.activationId }).then(function(activation) {
 				console.log(JSON.stringify(activation, undefined, 4));
-				next();
+				eventBus.emit('invocation-done', activation);
+				ok_(next);
 			    });
 			    break;
 			}

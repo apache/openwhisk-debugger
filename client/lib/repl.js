@@ -72,6 +72,7 @@ var exit = {
 var invoke = {
     handler: rewriter.invoke,
     description: 'Invoke an action',
+    needsEventBus: true,
     synchronous: true
 };
 var list = {
@@ -124,7 +125,7 @@ commandHandlers = {
     '?': help
 };
 
-function repl(wskprops) {
+function repl(wskprops, eventBus) {
     prompt.prompt([{
 	name: 'command', message: '(wskdb)',
 	prefixMessage: '', // override the default question mark prefix
@@ -135,7 +136,7 @@ function repl(wskprops) {
     }]).then(function(response) {
 	if (response.command.length === 0) {
 	    // user hit return;
-	    return repl(wskprops);
+	    return repl(wskprops, eventBus);
 	}
 	
 	var commandLine = response.command.split(/\s+/);
@@ -156,11 +157,15 @@ function repl(wskprops) {
 	if (handler.synchronous) {
 	    // the second parameter is the call back to the repl
 	    // when done with the synchronous operation
-	    commandLine.unshift(repl.bind(undefined, wskprops));
+	    commandLine.unshift(repl.bind(undefined, wskprops, eventBus));
 	}
 
 	if (handler.options) {
 	    commandLine.unshift(options);
+	}
+
+	if (handler.needsEventBus) {
+	    commandLine.unshift(eventBus);
 	}
 
 	// the first parameter is wskprops
@@ -175,7 +180,7 @@ function repl(wskprops) {
 
 	if (!handler.synchronous) {
 	    // if async, then restart the repl right away
-	    repl(wskprops);
+	    repl(wskprops, eventBus);
 	}
     });
 }

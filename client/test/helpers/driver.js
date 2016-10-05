@@ -1,57 +1,60 @@
 'use strict'
 
-var test = require('ava').test;
+const test = require('ava').test;
 const uuid = require('uuid');
 const spawn = require('child_process').spawn;
 
 function Driver() {
 }
-Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, rootPath) {
+Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, args, rootPath) {
     test(shouldDoThisSuccessfully, t => {
 	return new Promise((resolve,reject) => {
-	    const child = spawn('node', ['wskdb.js'], { cwd: rootPath || '../..' });
+	    const child = spawn('node', ['wskdb.js'].concat(args || []), { cwd: rootPath || '../..' });
 
-		var name = uuid.v4();
-		var steps = stepFn(name);
+	    const name = uuid.v4();
+	    const steps = stepFn(name);
 	    
-		var stepNumber = 0;
-		var goody = false;
+	    var stepNumber = 0;
+	    var goody = false;
 	    
-		function doStep() {
-		    child.stdin.write(steps[stepNumber++] + '\n');
-		}
-		doStep(); // do the first step
+	    function doStep() {
+		// console.log("STEP " + steps[stepNumber]);
+		child.stdout.pause();
+		child.stdin.write(steps[stepNumber++] + '\n');
+		child.stdout.resume();
+	    }
+	    doStep(); // do the first step
 		
-		child.stderr.on('data', (data) => {
-		    console.error('stderr: ' + data);
-		});
+	    child.stderr.on('data', (data) => {
+		console.error('stderr: ' + data);
+	    });
 		
-		child.stdout.on('data', (data) => {
-		    //console.log('stdout: ' + data)
-		    if (data.indexOf('Error') >= 0) {
-			goody = false;
-			reject('Step ' + (stepNumber - 1) + ' failed');
+	    child.stdout.on('data', (data) => {
+		//console.log('stdout: ' + data + " ||| " + data.indexOf('(wskdb)'))
+		if (data.indexOf('Error') >= 0) {
+		    goody = false;
+		    reject('Step ' + (stepNumber - 1) + ' failed');
 			
-		    } else if (data.indexOf('ok') >= 0) {
-			goody = true;
+		} else if (data.indexOf('ok') == 0 || data.indexOf('break in') >= 0) {
+		    goody = true;
 			
-			if (stepNumber === steps.length) {
-			    child.stdin.write('quit\n');
-			    child.stdin.end();
-			} else {
-			    doStep();
-			}
-		    }
-		});
-		child.on('exit', (code) => {
-		    if (code === 0 && goody) {
-			resolve();
+		    if (stepNumber === steps.length) {
+			child.stdin.write('quit\n');
+			child.stdin.end();
 		    } else {
-			reject('code=${code} goody=${goody}');
+			doStep();
 		    }
-		});
-	    }).then(result => t.is(result));
-	});
+		}
+	    });
+	    child.on('exit', (code) => {
+		if (code === 0 && goody) {
+		    resolve();
+		} else {
+		    reject('code=${code} goody=${goody}');
+		}
+	    });
+	}).then(result => t.is(result));
+    });
 } /* the end of it! */
 
 module.exports = new Driver().it;

@@ -15,19 +15,20 @@
  */
 
 var fs = require('fs'),
+    ok_ = require('./repl-messages').ok_,
     tmp = require('tmp'),
     open = require('open'),
     path = require('path'),
     spawn = require('child_process').spawn;
 
-exports.debug = function debugNodeJS(message, ws, echoChamberNames, done, commandLineOptions) {
+exports.debug = function debugNodeJS(message, ws, echoChamberNames, done, commandLineOptions, eventBus) {
     try {
-	exports._debug(message, ws, echoChamberNames, done, commandLineOptions);
+	exports._debug(message, ws, echoChamberNames, done, commandLineOptions, eventBus);
     } catch (e) {
 	console.error(e);
     }
 };
-exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, commandLineOptions) {
+exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, commandLineOptions, eventBus) {
     var code = message.action.exec.code;
 
     var r = new RegExp(/main[\s]*\([^\)]*\)/);
@@ -123,7 +124,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		    }
 		    if (!addrInUse) {
 			try { tmpfileCleanupCallback(); } catch (e) { }
-			done();
+			ok_(done());
 		    }
 		}
 		child.on('close', cleanUpSubprocesses);
@@ -139,14 +140,21 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		    var child = spawn('node',
 				      ['debug', tmpFilePath],
 				      spawnOpts);
-		    child.on('exit', (message) => console.error('EXIT',message));
-		    
+		    child.on('exit', (code) => {
+			if (code !== 0) {
+			    console.error('The debugger exited abnormally with code ' + code);
+			}
+		    });
+
+		    eventBus.on('invocation-done', () => child.kill());
+
 		    child.on('close', () => {
 			try { tmpfileCleanupCallback(); } catch (e) { }
-			done();
+			done(); // we don't need to "ok" here, as the invoker will do that for us
 		    });
 		} catch (e) {
 		    console.error('Error spawning debugger', e);
+		    console.error(e.stack);
 		    done();
 		}
 	    }
@@ -159,6 +167,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 	});
 	} catch (e) {
 	    console.error(e);
+	    console.error(e.stack);
 	}
     });
 };

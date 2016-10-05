@@ -17,6 +17,8 @@
 var argv = require('argv'),
     repl = require('./lib/repl').repl,
     colors = require('colors'),
+    events = require('events'),
+    eventBus = new events.EventEmitter(),
     WebSocket = require('ws'),
     debugNodeJS = require('./lib/debug-nodejs').debug,
     expandHomeDir = require('expand-home-dir'),
@@ -82,7 +84,7 @@ ws.on('open', function open() {
 });
 
 
-    repl(wskprops);
+    repl(wskprops, eventBus);
 });
 
 ws.on('close', function() {
@@ -125,7 +127,7 @@ ws.on('message', function(data, flags) {
 
 	    if (message.onDone_trigger) {
 		if (message.action && message.action.exec && message.action.exec.kind.indexOf('nodejs') >= 0) {
-		    debugNodeJS(message, ws, { trigger: message.onDone_trigger }, done, commandLineOptions);
+		    debugNodeJS(message, ws, { trigger: message.onDone_trigger }, done, commandLineOptions, eventBus);
 		} else {
 		    console.error('Unable to complete invocation: no action code to debug');
 		    circuitBreaker();
