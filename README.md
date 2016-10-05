@@ -37,3 +37,15 @@ If you wish to limit the instrumentation to the action, avoiding any containing 
 Attaching to foo
    Creating action trampoline
 ```
+
+### License
+
+Copyright 2015-2016 IBM Corporation
+
+Licensed under the [Apache License, Version 2.0 (the "License")](http://www.apache.org/licenses/LICENSE-2.0.html).
+
+Unless required by applicable law or agreed to in writing, software distributed under the license is distributed on an "as is" basis, without warranties or conditions of any kind, either express or implied. See the license for the specific language governing permissions and limitations under the license.
+
+### Issues
+
+Report bugs, ask questions and request features [here on GitHub](../../issues).
