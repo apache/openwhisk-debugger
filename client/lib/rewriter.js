@@ -15,7 +15,14 @@
  */
 
 var uuid = require('uuid'),
+    inquirer = require('inquirer'),
     openwhisk = require('openwhisk'),
+    setupOpenWhisk = require('./util').setupOpenWhisk,
+    lister = require('./commands/list'),
+    Namer = require('./namer'),
+    ok = require('./repl-messages').ok,
+    ok_ = require('./repl-messages').ok_,
+    errorWhile = require('./repl-messages').errorWhile,
     invokerPackageNamespace = 'nickm@us.ibm.com_canary-advisor', // this is currently housed in one of nick's namespace
     invokerPackageName = 'owdbg',
     invokerActionName = 'invoker',
@@ -27,7 +34,6 @@ var uuid = require('uuid'),
 
 /** the dictionary of live attachments to actions */
 var attached = {}, chainAttached = {};
-var created = {};
 
 function echoContinuation(entity, entityNamespace) {
     return {
@@ -40,160 +46,6 @@ function echoContinuation(entity, entityNamespace) {
 }
 
 /**
- * Initialize a connection mediator to openwhisk
- *
- */
-function setupOpenWhisk(wskprops) {
-    var key = wskprops.AUTH;
-    var namespace = wskprops.NAMESPACE;
-    var ow = openwhisk({
-	api: api.host + api.path,
-	api_key: key,
-	namespace: namespace
-    });
-    return ow;
-}
-
-/**
- * Log an error, and continue
- *
- */
-function errorWhile(inOperation, callback) {
-    return function(err) {
-	console.error('Error ' + inOperation);
-	console.error(err);
-	if (callback) {
-	    callback();
-	}
-    };
-}
-
-function ok(next) {
-    return function() {
-	console.log('ok');
-	next();
-    };
-}
-function ok_(next) {
-    ok(next)();
-}
-
-/**
- *
- * @return a new unique name for an entity
- */
-var Namer = {
-    prefix: '___debug___',
-    name: function name(extra) {
-	return Namer.prefix + (extra ? extra + '-' : '') + uuid.v4();
-    },
-    isDebugArtifact: function(name) {
-	return name.indexOf(Namer.prefix) === 0;
-    }
-};
-
-function _list(ow, callback, type) {
-    ow[type || 'actions']
-	.list({ limit: 200 })
-	.then(function onList(L) { callback(L, ow); },
-	      errorWhile('fetching actions', callback));
-}
-exports.list = function list(wskprops, callback, type) {
-    var ow = setupOpenWhisk(wskprops);
-    _list(ow, callback, type);
-};
-
-exports.listToConsole = function listToConsole(wskprops, options, next) {
-    if (options.help) {
-	return next();
-    }
-
-    console.log('Available actions:'.blue);
-    function print(actions) {
-	actions
-	    .filter(action => options && options.full || !Namer.isDebugArtifact(action.name))
-	    .forEach(action => console.log('    ', action.name[created[action.name] ? 'green' : 'reset']));
-
-	ok_(next);
-    }
-
-    exports.list(wskprops, print);
-};
-
-/**
- * Create an action
- *
- */
-exports.create = function create(wskprops, next, name) {
-    var questions = [];
-    if (!name) {
-	questions.push({ name: 'name', message: 'Choose a name for your new action' });
-    }
-    questions.push({ name: 'kind', type: 'list',
-		     message: 'Which runtime do you want to use?',
-		     choices: ['nodejs', 'swift', 'python' ]
-		   });
-    questions.push({ name: 'code', type: 'editor',
-		     message: 'Please provide the function body for your new action',
-		     default: function(response) {
-			 if (response.kind === 'nodejs') {
-			     // nodejs
-			     return 'function main(params) {\n    return { message: \'hello\' };\n}\n';
-			 } else if (response.kind === 'swift') {
-			     // swift
-			     return 'func main(args: [String:Any]) -> [String:Any] {\n      return [ "message" : "Hello world" ]\n}\n';
-			 } else {
-			     // python
-			     return 'import sys\n\ndef main(dict):\n    return { \'message\': \'Hello world\' }\n';
-			 }
-		     }
-		   });
-
-    require('inquirer')
-	.prompt(questions)
-	.then(response => {
-	      return setupOpenWhisk(wskprops).actions.create({
-		  actionName: name || response.name,
-		  action: {
-		      exec: {
-			  kind: response.kind,
-			  code: response.code
-		      }
-		  }
-	      });
-	})
-	.then((action) => created[action.name] = true)
-	.then(ok(next), errorWhile('creating action', next));
-};
-
-/**
- * Delete an action
- *
- */
-exports.deleteAction = function deleteAction(wskprops, next, name) {
-    var ow = setupOpenWhisk(wskprops);
-
-    function doDelete(name) {
-	ow.actions.delete({ actionName: name })
-	    .then((action) => delete created[action.name])
-	    .then(ok(next), errorWhile('deleting action', next));
-    }
-    
-    if (!name) {
-	_list(ow, function(L) {
-	    require('inquirer')
-		.prompt([{ name: 'name', type: 'list',
-			   message: 'Which action do you wish to delete',
-			   choices: L.map(function(action) { return action.name; })
-			 }])
-		.then(function(response) { doDelete(response.name); });
-	});
-    } else {
-	doDelete(name);
-    }
-};
-
-/**
  * Clean up any residual debugging artifacts
  *
  */
@@ -203,7 +55,7 @@ exports.clean = function clean(wskprops, next) {
 	// console.log('Cleaning ' + types);
 
 	return new Promise(function(resolve, reject) {
-	    exports.list(wskprops, function onList(entities, ow) {
+	    lister.list(wskprops, function onList(entities, ow) {
 		var toClean = entities.filter(function(entity) {
 		    return Namer.isDebugArtifact(entity.name);
 		});
@@ -415,7 +267,7 @@ exports.attach = function attach(wskprops, options, next, entity) {
 		//
 		return next();
 	    }
-	    _list(ow, function onList(entities) {
+	    lister._list(ow, function onList(entities) {
 		var counter = entities.length;
 		function countDown(names) {
 		    if (--counter <= 0) {
@@ -533,7 +385,7 @@ exports.detach = function detach(wskprops, next, entity) {
 	    console.error('No attached actions detected');
 	    next();
 	} else {
-	    require('inquirer')
+	    inquirer
 		.prompt([{ name: 'name', type: 'list',
 			   message: 'From which action do you wish to detach',
 			   choices: L

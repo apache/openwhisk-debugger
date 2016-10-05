@@ -16,6 +16,7 @@
 
 var argv = require('argv'),
     prompt = require('inquirer'),
+    lister = require('./commands/list'),
     rewriter = require('./rewriter'),
     columnify = require('columnify');
 
@@ -50,7 +51,7 @@ var help = {
 };
 var attach = {
     handler: rewriter.attach,
-    enumerate: rewriter.list,
+    enumerate: lister.list,
     description: 'Attach to an action',
     synchronous: true,
     options: [{ name: 'action-only', short: 'a', type: 'string', description: 'Instrument just the action, not any rules or sequences in which it takes part' }]
@@ -74,7 +75,7 @@ var invoke = {
     synchronous: true
 };
 var list = {
-    handler: rewriter.listToConsole,
+    handler: lister.listToConsole,
     description: 'List available actions',
     synchronous: true,
     options: [{ name: 'full', short: 'f', type: 'string', description: 'Show all actions, including debugging artifacts' }]
@@ -85,12 +86,12 @@ var clean = {
     synchronous: true
 };
 var create = {
-    handler: rewriter.create,
+    handler: require('./commands/create').create,
     description: 'Create an action',
     synchronous: true
 };
 var deleteAction = {
-    handler: rewriter.deleteAction,
+    handler: require('./commands/delete').deleteAction,
     description: 'Delete an action',
     synchronous: true
 };
