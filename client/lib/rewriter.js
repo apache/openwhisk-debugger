@@ -83,11 +83,11 @@ exports.clean = function clean(wskprops, next) {
 		 cleanType('trigger'),
 		 cleanType('package')
 		])
-	.then(function() {
+	.then(() =>
 	    cleanType('rule')
 		.then(ok(next),
-		      errorWhile('cleaning rules', next));
-	}, errorWhile('cleaning actions and triggers', next));
+		      errorWhile('cleaning rules', next)),
+	      errorWhile('cleaning actions and triggers', next));
 };
 
 function createUpstreamAdapterNames(continuationName) {
@@ -174,13 +174,37 @@ function splice(ow, entity, entityNamespace, next) {
  * Does the given sequence entity use the given action entity located in the given entityNamespace?
  *
  */
-function sequenceUses(sequenceEntityThatMaybeUses, entity, entityNamespace) {
-    var fqn = '/' + entityNamespace + '/' + entity;
+var SequenceRewriter = {
+    rewriteNeeded: function sequenceUses(sequenceEntityThatMaybeUses, entity, entityNamespace) {
+	var fqn = '/' + entityNamespace + '/' + entity;
 
-    return sequenceEntityThatMaybeUses.name !== entity
-	&& sequenceEntityThatMaybeUses.exec && sequenceEntityThatMaybeUses.exec.kind === 'sequence'
-	&& sequenceEntityThatMaybeUses.exec.components && sequenceEntityThatMaybeUses.exec.components.find((c) => c === fqn);
-}
+	return sequenceEntityThatMaybeUses.name !== entity
+	    && sequenceEntityThatMaybeUses.exec && sequenceEntityThatMaybeUses.exec.kind === 'sequence'
+	    && sequenceEntityThatMaybeUses.exec.components && sequenceEntityThatMaybeUses.exec.components.find((c) => c === fqn);
+    }
+};
+
+var RuleRewriter = {
+    /**
+     * Does the given rule entity use the given action entity located in the given entityNamespace?
+     *
+     */
+    rewriteNeeded: function ruleUses(ruleEntityThatMaybeUses, entity, entityNamespace) {
+	//var fqn = '/' + entityNamespace + '/' + entity;
+
+	return ruleEntityThatMaybeUses.name !== entity
+	    && ruleEntityThatMaybeUses.action === entity;
+    },
+
+    rewrite: function cloneRule(ow, ruleEntityWithDetails, entity, entityNamespace, names) {
+	return ow.rules.create({ ruleName: Namer.name('rule-clone'),
+				 trigger: ruleEntityWithDetails.trigger,
+				 action: names.debugStubName // FIXME we need to copy the invoker into the user's namespace :(
+			       });
+	    //.then((newRule) => chainAttached(ruleEntityWithDetails.name) = newRule
+    }
+};
+
 
 function beforeSpliceSplitter(element, replacement, A) { A = A.slice(0, A.indexOf(element)); A.push(replacement); return A; }
 function afterSpliceSplitter(element, tackOnTheEnd, A) { A = A.slice(A.indexOf(element) + 1); return A; }
@@ -244,6 +268,34 @@ function spliceSequence(ow, sequence, entity, entityNamespace, names) {
     }
 }
 
+function doPar(ow, type, entity, next, each) {
+    var types = type + 's';
+    ow[types].list({ limit: 200 })
+	.then((entities) => {
+	    var counter = entities.length;
+	    function countDown(names) {
+		if (--counter <= 0) {
+		    ok_(next);
+		}
+	    }
+	    entities.forEach((otherEntity) => {
+		if (otherEntity.name === entity) {
+		    // this is the entity itself. skip, because
+		    // we're looking for uses in *other* entities
+		    countDown();
+
+		} else {
+		    var opts = { namespace: otherEntity.namespace };
+		    opts[type + 'Name'] = otherEntity.name;
+		    ow[types].get(opts)
+			.then((otherEntityWithDetails) => each(otherEntityWithDetails, countDown))
+			.catch(errorWhile('processing one ' + type, countDown));
+		}
+	    });
+	})
+	.catch(errorWhile('processing ' + types, next));
+}
+
 /**
  * Attach to the given entity, allowing for debugging its invocations
  *
@@ -267,32 +319,30 @@ exports.attach = function attach(wskprops, options, next, entity) {
 		//
 		return next();
 	    }
-	    lister._list(ow, function onList(entities) {
-		var counter = entities.length;
-		function countDown(names) {
-		    if (--counter <= 0) {
-			ok_(next);
-		    }
-		}
-		entities.forEach(function(otherEntity) {
-		    if (otherEntity.name === entity) {
-			// this is the entity itself. skip, because
-			// we're looking for uses in *other* entities
-			countDown();
+	    doPar(ow, 'action', entity, next, (otherEntityWithDetails, countDown) => {
+		if (SequenceRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
+		    //
+		    // splice the sequence!
+		    //
+		    console.log('   Creating sequence splice'.green, otherEntityWithDetails.name);
+		    spliceSequence(ow, otherEntityWithDetails, entity, entityNamespace, names)
+			.then(countDown)
+			.catch(errorWhile('creating sequence splice', countDown));
 
-		    } else {
-			ow.actions.get({ actionName: otherEntity.name, namespace: otherEntity.namespace })
-			    .then(function(sequenceWithDetails) {
-				if (sequenceUses(sequenceWithDetails, entity, entityNamespace)) {
-				    console.log('   Creating sequence splice'.green, otherEntity.name);
-				    spliceSequence(ow, sequenceWithDetails, entity, entityNamespace, names)
-					.then(countDown, errorWhile('creating sequence splice', countDown));
-				} else {
-				    countDown();
-				}
-			    }).catch(function() { countDown(); });
-		    }
-		});
+		} else {
+		    countDown();
+		}
+	    });
+
+	    doPar(ow, 'rule', entity, next, (otherEntityWithDetails, countDown) => {
+		if (RuleRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
+		    //
+		    // clone the rule!
+		    //
+		    console.log('   Creating rule clone'.green, otherEntityWithDetails.name);
+		    RuleRewriter.rewrite(ow, otherEntityWithDetails, entity, entityNamespace, names)
+			.then(countDown, errorWhile('creating rule clone', countDown));
+		}
 	    });
 	});
 	
