@@ -26,11 +26,11 @@ exports.debug = function debugNodeJS(message, ws, echoChamberNames, done, comman
     } catch (e) {
 	console.error(e);
     }
-}
+};
 exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, commandLineOptions) {
     var code = message.action.exec.code;
 
-    var r = new RegExp(/main[\s]*\([^\)]*\)/)
+    var r = new RegExp(/main[\s]*\([^\)]*\)/);
     var startOfMethodBody = code.search(r);
     if (startOfMethodBody >= 0) {
 	var paren = code.indexOf('{', startOfMethodBody);
@@ -44,7 +44,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
     bootstrap += 'ow = openwhisk({api: \'' + api.host + api.path + '\', api_key: \'' + message.key + '\', namespace: \'' + message.action.namespace + '\' });\n';
     bootstrap += 'ow.triggers.invoke({ triggerName: \'' + echoChamberNames.trigger + '\', params: result });\n';*/
 
-    code += '\n\n//\n'
+    code += '\n\n//\n';
     code += '// Welcome to the OpenWhisk debugger.\n';
     code += '//\n';
     code += '// To proceed with debugging, press the continue => button.\n';
@@ -59,7 +59,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 
             // we need to update the NODE_PATH env var, to add our local modules
 	    var env = Object.assign({}, process.env);
-	    env['NODE_PATH'] = path.join(process.cwd(), 'node_modules')
+	    env.NODE_PATH = path.join(process.cwd(), 'node_modules')
 		+ ':' + path.join(process.cwd(), 'lib');
 
 	    function trySpawnWithBrowser(webPort, debugPort) {
@@ -103,7 +103,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			//
 			// ignore some internal errors in node-inspector
 			//
-			console.error('stderr: ' + message)
+			console.error('stderr: ' + message);
 		    }
 		});
 
@@ -161,4 +161,4 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 	    console.error(e);
 	}
     });
-}
+};

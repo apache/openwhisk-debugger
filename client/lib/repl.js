@@ -19,6 +19,7 @@ var argv = require('argv'),
     rewriter = require('./rewriter'),
     columnify = require('columnify');
 
+var commandHandlers; // defined below. helping out jshint here
 var help = {
     handler: function help() {
 	console.log('The available commands are:');
@@ -26,72 +27,74 @@ var help = {
 
 	var grouped = {};
 	for (var x in commandHandlers) {
-	    var already = grouped[commandHandlers[x].description];
-	    if (already) {
-		grouped[commandHandlers[x].description] = already + ", " + x;
-	    } else {
-		grouped[commandHandlers[x].description] = x;
+	    if (commandHandlers.hasOwnProperty(x)) {
+		var already = grouped[commandHandlers[x].description];
+		if (already) {
+		    grouped[commandHandlers[x].description] = already + ', ' + x;
+		} else {
+		    grouped[commandHandlers[x].description] = x;
+		}
 	    }
 	}
 	
 	var pruned = [];
 	for (var d in grouped) {
-	    pruned.push({ command: grouped[d], description: d });
+	    if (grouped.hasOwnProperty(d)) {
+		pruned.push({ command: grouped[d], description: d });
+	    }
 	}
 
 	console.log(columnify(pruned, { minWidth: 18 }));
     },
-    description: "Print this help text"
+    description: 'Print this help text'
 };
 var attach = {
     handler: rewriter.attach,
     enumerate: rewriter.list,
-    description: "Attach to an action",
+    description: 'Attach to an action',
     synchronous: true,
     options: [{ name: 'action-only', short: 'a', type: 'string', description: 'Instrument just the action, not any rules or sequences in which it takes part' }]
 };
 var detach = {
     handler: rewriter.detach,
-    description: "Detatch from an action",
+    description: 'Detatch from an action',
     synchronous: true
 };
 var exit = {
     handler: function(wskprops) {
-	//console.log("Cleaning up".red);
+	//console.log('Cleaning up'.red);
 	rewriter.detachAll(wskprops, process.exit);
     },
-    description: "Quit the debugger",
+    description: 'Quit the debugger',
     synchronous: true
 };
 var invoke = {
     handler: rewriter.invoke,
-    description: "Invoke an action",
+    description: 'Invoke an action',
     synchronous: true
 };
 var list = {
     handler: rewriter.listToConsole,
-    description: "List available actions",
+    description: 'List available actions',
     synchronous: true,
     options: [{ name: 'full', short: 'f', type: 'string', description: 'Show all actions, including debugging artifacts' }]
 };
 var clean = {
     handler: rewriter.clean,
-    description: "Clean up debugging artifacts",
+    description: 'Clean up debugging artifacts',
     synchronous: true
 };
 var create = {
     handler: rewriter.create,
-    description: "Create an action",
+    description: 'Create an action',
     synchronous: true
 };
 var deleteAction = {
     handler: rewriter.deleteAction,
-    description: "Delete an action",
+    description: 'Delete an action',
     synchronous: true
 };
-
-
-var commandHandlers = {
+commandHandlers = {
     list: list,
     l: list,
     
@@ -126,10 +129,10 @@ function repl(wskprops) {
 	prefixMessage: '', // override the default question mark prefix
 	validate: function(line) {
 	    var commandLine = line.split(/\s+/);
-	    return line.length == 0 || commandHandlers[commandLine[0]] ? true : "Invalid command";
+	    return line.length === 0 || commandHandlers[commandLine[0]] ? true : 'Invalid command';
 	}
     }]).then(function(response) {
-	if (response.command.length == 0) {
+	if (response.command.length === 0) {
 	    // user hit return;
 	    return repl(wskprops);
 	}
@@ -142,10 +145,10 @@ function repl(wskprops) {
 	if (handler.options) {
 	    argv.clear();
 	    argv.description = 'Usage: ' + command + ' [options]';
-	    argv.options.help.example = "";
+	    argv.options.help.example = '';
 	    argv.options.help.onset = (args) => {
 		argv.help(args.mod);
-	    }
+	    };
 	    options = argv.option(handler.options).run(commandLine).options;
 	}
 

@@ -16,7 +16,9 @@ module.exports = function(key, namespace, triggerName, breakAtExit) {
 
 	// if you want to insert a breakpoint just before exit
 	if (breakAtExit) {
+	    /* jshint ignore:start */
 	    debugger;
+	    /* jshint ignore:end */
 	}
 
 	console.log('Returning ' + JSON.stringify(result, undefined, 4));

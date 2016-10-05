@@ -47,13 +47,15 @@ ws.on('open', function open() {
 
     if (commandLineOptions) {
 	for (var x in commandLineOptions) {
-	    console.log(('    + ' + commandLineOptionsConfig.find((o) => o.name == x).description).dim);
+	    if (commandLineOptions.hasOwnProperty(x)) {
+		console.log(('    + ' + commandLineOptionsConfig.find((o) => o.name === x).description).dim);
+	    }
 	}
     }
     console.log();
 
     var wskprops = propertiesParser.read(expandHomeDir('~/.wskprops'));
-    var key = wskprops['AUTH'];
+    var key = wskprops.AUTH;
     ws.send(JSON.stringify({
 	type: 'init',
 	key: key
@@ -68,7 +70,7 @@ ws.on('open', function open() {
     process.on('exit', function onExit() {
     try {
 	console.log('Goodbye!'.red);
-	clearTimer(keepAlive);
+	clearInterval(keepAlive);
 
 	ws.send(JSON.stringify({
 	    type: 'disconnect'
@@ -101,7 +103,7 @@ ws.on('message', function(data, flags) {
 	    console.log('Debug session requested');
 	    //console.log(JSON.stringify(message, undefined, 4));
 
-	    function done(err, result) {
+	    var done = function done(err, result) {
 		// console.log('Finishing up this debug session');
 
 		ws.send(JSON.stringify({
@@ -112,17 +114,14 @@ ws.on('message', function(data, flags) {
 		}));
 
 		//ws.close();
-	    }
-	    function circuitBreaker() {
+	    };
+	    var circuitBreaker = function circuitBreaker() {
 		ws.send(JSON.stringify({
 			type: 'circuit-breaker',
 			key: message.key,
 			activationId: message.activationId,
 		}));
-	    }
-	    function next(echoChamberNames) {
-	    }
-	    var nextOnErr = done.bind(undefined, true);
+	    };
 
 	    if (message.onDone_trigger) {
 		if (message.action && message.action.exec && message.action.exec.kind.indexOf('nodejs') >= 0) {

@@ -44,8 +44,8 @@ function echoContinuation(entity, entityNamespace) {
  *
  */
 function setupOpenWhisk(wskprops) {
-    var key = wskprops['AUTH'];
-    var namespace = wskprops['NAMESPACE'];
+    var key = wskprops.AUTH;
+    var namespace = wskprops.NAMESPACE;
     var ow = openwhisk({
 	api: api.host + api.path,
 	api_key: key,
@@ -62,7 +62,9 @@ function errorWhile(inOperation, callback) {
     return function(err) {
 	console.error('Error ' + inOperation);
 	console.error(err);
-	callback && callback();
+	if (callback) {
+	    callback();
+	}
     };
 }
 
@@ -86,23 +88,25 @@ var Namer = {
 	return Namer.prefix + (extra ? extra + '-' : '') + uuid.v4();
     },
     isDebugArtifact: function(name) {
-	return name.indexOf(Namer.prefix) == 0;
+	return name.indexOf(Namer.prefix) === 0;
     }
 };
 
-exports.list = function list(wskprops, callback, type) {
-    var ow = setupOpenWhisk(wskprops);
-    _list(ow, callback, type);
-};
 function _list(ow, callback, type) {
     ow[type || 'actions']
 	.list({ limit: 200 })
 	.then(function onList(L) { callback(L, ow); },
 	      errorWhile('fetching actions', callback));
 }
+exports.list = function list(wskprops, callback, type) {
+    var ow = setupOpenWhisk(wskprops);
+    _list(ow, callback, type);
+};
 
 exports.listToConsole = function listToConsole(wskprops, options, next) {
-    if (options.help) return next();
+    if (options.help) {
+	return next();
+    }
 
     console.log('Available actions:'.blue);
     function print(actions) {
@@ -132,9 +136,16 @@ exports.create = function create(wskprops, next, name) {
     questions.push({ name: 'code', type: 'editor',
 		     message: 'Please provide the function body for your new action',
 		     default: function(response) {
-			 if (response.kind == 'nodejs') return 'function main(params) {\n    return { message: \'hello\' };\n}\n'
-			 else if (response.kind == 'swift') return 'func main(args: [String:Any]) -> [String:Any] {\n      return [ "message" : "Hello world" ]\n}\n'
-			 else return 'import sys\n\ndef main(dict):\n    return { \'message\': \'Hello world\' }\n'
+			 if (response.kind === 'nodejs') {
+			     // nodejs
+			     return 'function main(params) {\n    return { message: \'hello\' };\n}\n';
+			 } else if (response.kind === 'swift') {
+			     // swift
+			     return 'func main(args: [String:Any]) -> [String:Any] {\n      return [ "message" : "Hello world" ]\n}\n';
+			 } else {
+			     // python
+			     return 'import sys\n\ndef main(dict):\n    return { \'message\': \'Hello world\' }\n';
+			 }
 		     }
 		   });
 
@@ -198,11 +209,11 @@ exports.clean = function clean(wskprops, next) {
 		});
 		var counter = toClean.length;
 		
-		if (counter == 0) {
+		if (counter === 0) {
 		    return resolve(toClean.length);
 		}
 		function countDown() {
-		    if (--counter == 0) {
+		    if (--counter === 0) {
 			resolve(toClean.length);
 		    }
 		}
@@ -223,7 +234,7 @@ exports.clean = function clean(wskprops, next) {
 	.then(function() {
 	    cleanType('rule')
 		.then(ok(next),
-		      errorWhile('cleaning rules', next))
+		      errorWhile('cleaning rules', next));
 	}, errorWhile('cleaning actions and triggers', next));
 };
 
@@ -307,14 +318,16 @@ function splice(ow, entity, entityNamespace, next) {
     }
 }
 
-function sequenceUses(maybeUsingEntity, entity, entityNamespace) {
+/**
+ * Does the given sequence entity use the given action entity located in the given entityNamespace?
+ *
+ */
+function sequenceUses(sequenceEntityThatMaybeUses, entity, entityNamespace) {
     var fqn = '/' + entityNamespace + '/' + entity;
 
-    return maybeUsingEntity.name !== entity
-	&& maybeUsingEntity.exec && maybeUsingEntity.exec.kind == 'sequence'
-	&& maybeUsingEntity.exec.components && maybeUsingEntity.exec.components.find(function(c) {
-	    return c === fqn;
-	});
+    return sequenceEntityThatMaybeUses.name !== entity
+	&& sequenceEntityThatMaybeUses.exec && sequenceEntityThatMaybeUses.exec.kind === 'sequence'
+	&& sequenceEntityThatMaybeUses.exec.components && sequenceEntityThatMaybeUses.exec.components.find((c) => c === fqn);
 }
 
 function beforeSpliceSplitter(element, replacement, A) { A = A.slice(0, A.indexOf(element)); A.push(replacement); return A; }
@@ -334,7 +347,7 @@ function makeSequenceSplicePart(ow, name, sequence, splitter) {
 }
 function spliceSequence(ow, sequence, entity, entityNamespace, names) {
     try {
-	var finalBit = undefined/*{
+	var finalBit;/*{
 	    actionName: Namer.name('action'),
 	    action: echoContinuation(entity, entityNamespace, spliceNames.onDone_trigger)
 	};*/
@@ -364,11 +377,13 @@ function spliceSequence(ow, sequence, entity, entityNamespace, names) {
 		//
 		// this sequence splice uses its own downstream trigger, not the generic one from the action splice
 		//
-		return chainAttached[sequence.name] = {
+		var names = {
 		    before: beforeAndAfter[0].name,
 		    after: beforeAndAfter[1].name,
 		    triggerName: upstreamAdapterNames.triggerName
 		};
+		chainAttached[sequence.name] = names;
+		return names;
 
 	    }, errorWhile('creating upstream adapter'));
     }, errorWhile('splicing sequence'));
@@ -382,12 +397,14 @@ function spliceSequence(ow, sequence, entity, entityNamespace, names) {
  *
  */
 exports.attach = function attach(wskprops, options, next, entity) {
-    if (options.help) return next();
+    if (options.help) {
+	return next();
+    }
 
     console.log('Attaching'.blue + ' to ' + entity);
 
     try {
-	var entityNamespace = wskprops['NAMESPACE'];
+	var entityNamespace = wskprops.NAMESPACE;
 	var ow = setupOpenWhisk(wskprops);
 
 	console.log('   Creating action trampoline'.green);
@@ -407,7 +424,10 @@ exports.attach = function attach(wskprops, options, next, entity) {
 		}
 		entities.forEach(function(otherEntity) {
 		    if (otherEntity.name === entity) {
+			// this is the entity itself. skip, because
+			// we're looking for uses in *other* entities
 			countDown();
+
 		    } else {
 			ow.actions.get({ actionName: otherEntity.name, namespace: otherEntity.namespace })
 			    .then(function(sequenceWithDetails) {
@@ -435,42 +455,29 @@ exports.detachAll = function detachAll(wskprops, next) {
     var count = 0;
     function done() {
 	if (--count <= 0) {
-	    next && next();
+	    if (next) {
+		next();
+	    }
 	}
     }
     
     for (var entity in attached) {
-	count++;
+	if (attached.hasOwnProperty(entity)) {
+	    count++;
+	}
     }
 
-    if (count == 0) {
+    if (count === 0) {
 	done();
     } else {
-	for (var entity in attached) {
-	    exports.detach(wskprops, done, entity);
+	for (entity in attached) {
+	    if (attached.hasOwnProperty(entity)) {
+		exports.detach(wskprops, done, entity);
+	    }
 	}
     }
 };
 
-exports.detach = function detach(wskprops, next, entity) {
-    if (!entity) {
-	var L = [];
-	for (var x in attached) { L.push(x); }
-	if (L.length === 0) {
-	    console.error("No attached actions detected");
-	    next();
-	} else {
-	    require('inquirer')
-		.prompt([{ name: 'name', type: 'list',
-			   message: 'From which action do you wish to detach',
-			   choices: L
-			 }])
-		.then(function(response) { doDetach(wskprops, next, response.name); });
-	}
-    } else {
-	doDetach(wskprops, next, entity);
-    }
-}
 function doDetach(wskprops, next, entity) {
     console.log('Detaching'.blue + ' from ' + entity);
 
@@ -479,7 +486,9 @@ function doDetach(wskprops, next, entity) {
 	    if (err.indexOf && err.indexOf('HTTP 404') < 0) {
 		console.error('Error ' + idx, err);
 	    }
-	    if (!noNext) next();
+	    if (!noNext) {
+		next();
+	    }
 	};
     }
     
@@ -511,6 +520,29 @@ function doDetach(wskprops, next, entity) {
 	    console.error(e);
 	}
     }
+}
+exports.detach = function detach(wskprops, next, entity) {
+    if (!entity) {
+	var L = [];
+	for (var x in attached) {
+	    if (attached.hasOwnProperty(x)) {
+		L.push(x);
+	    }
+	}
+	if (L.length === 0) {
+	    console.error('No attached actions detected');
+	    next();
+	} else {
+	    require('inquirer')
+		.prompt([{ name: 'name', type: 'list',
+			   message: 'From which action do you wish to detach',
+			   choices: L
+			 }])
+		.then(function(response) { doDetach(wskprops, next, response.name); });
+	}
+    } else {
+	doDetach(wskprops, next, entity);
+    }
 };
 
 /**
@@ -527,13 +559,13 @@ exports.invoke = function invoke() {
 exports._invoke = function invoke() {
     var args = Array.prototype.slice.call(arguments);
     var wskprops = args.shift();
-    var namespace = wskprops['NAMESPACE'];
+    var namespace = wskprops.NAMESPACE;
     var next = args.shift();
     var action = args.shift();
 
     var params = {};
     for (var i = 0; i < args.length; i++) {
-	if (args[i] == '-p') {
+	if (args[i] === '-p') {
 	    params[args[++i]] = args[++i];
 	}
     }
@@ -569,7 +601,7 @@ exports._invoke = function invoke() {
 	return next();
     }
 
-    var key = wskprops['AUTH'];
+    var key = wskprops.AUTH;
     var ow = setupOpenWhisk(wskprops);
     var owForActivations = openwhisk({
 	api: api.host + api.path,
@@ -596,7 +628,7 @@ exports._invoke = function invoke() {
 		owForActivations.activations.list({ limit: 10 }).then(function(list) {
 		    for (var i = 0; i < list.length; i++) {
 			var activation = list[i];
-			if (activation.name == waitForThisAction) {
+			if (activation.name === waitForThisAction) {
 			    clearInterval(timer);
 			    owForActivations.activations.get({ activation: activation.activationId }).then(function(activation) {
 				console.log(JSON.stringify(activation, undefined, 4));
@@ -612,4 +644,4 @@ exports._invoke = function invoke() {
 	console.error('Unable to invoke your specified action');
 	next();
     });
-}
+};
