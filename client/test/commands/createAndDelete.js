@@ -22,7 +22,6 @@ it('should create and delete an action and quit without error', t => {
 		goody = false
 
 	    } else if (data.indexOf('ok') >= 0) {
-		child.stdin.write('q\n')
 		goody = true
 	    }
 	});
