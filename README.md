@@ -9,7 +9,7 @@ Start the debug client:
 % (cd client; ./wskdb)
 Welcome to the OpenWhisk Debugger
 
-? (wskdb)
+(wskdb)
 ```
 
 You will now be in a REPL. Issue `help` to see the list of available commands. 
@@ -17,7 +17,7 @@ You will now be in a REPL. Issue `help` to see the list of available commands.
 # Invoking an action
 The syntax here is almost identical to that of the `wsk` CLI.
 ```
-? (wskdb) invoke actionName -p param1 value1 -p param2 value2
+(wskdb) invoke actionName -p param1 value1 -p param2 value2
 ```
 
 If you haven't yet attached to the action you are invoking, the invocation will proceed as if you weren't in the debugger, and had issued a blocking invocation from the CLI.
