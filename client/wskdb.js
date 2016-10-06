@@ -18,6 +18,7 @@ var argv = require('argv'),
     repl = require('./lib/repl').repl,
     colors = require('colors'),
     events = require('events'),
+    package = require('./package.json'),
     eventBus = new events.EventEmitter(),
     WebSocket = require('ws'),
     debugNodeJS = require('./lib/debug-nodejs').debug,
@@ -37,6 +38,8 @@ var commandLineOptionsConfig = [
     {name: 'use-cli-debugger', short: 'c', type: 'string', description: 'Favor the CLI for debug sessions over a GUI'},
     {name: 'no-color', type: 'string', description: 'Avoid using console colors'} // this comes from the colors module
 ];
+argv.info('Usage: wskdb [attachTo] [options...]'.red + '\n\nWhere each option is one of the following:');
+argv.version(package.version);
 var commandLineOptions = argv
     .option(commandLineOptionsConfig)
     .run()
