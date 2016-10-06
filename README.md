@@ -6,13 +6,18 @@ This project currently supports debugging NodeJS actions on your laptop.
 
 Start the debug client:
 ```
-% (cd client; ./wskdb)
+% cd client
+% npm install  <-- you need do this only once
+% ./wskdb
 Welcome to the OpenWhisk Debugger
 
 (wskdb)
 ```
 
 You will now be in the `wsdk` REPL. Issue `help` to see the list of available commands. 
+
+Note: the first time you launch this, you will experience a small delay, as the debugger pulls in the NodeJS package dependencies supported by OpenWhisk. This will allow you to debug actions that require one or more of the NodeJS [packages supported by OpenWhisk](https://dev-console.stage1.ng.bluemix.net/docs/openwhisk/openwhisk_reference.html#openwhisk_ref_javascript).
+
 
 ## Invoking an action
 The syntax here is almost identical to that of the `wsk` CLI.
@@ -49,8 +54,6 @@ If you wish to limit the instrumentation to the action, avoiding any containing 
 Attaching to foo
    Creating action trampoline
 ```
-
-The first time you launch this, you will experience a small delay, as the debugger pulls in the NodeJS package dependencies supported by OpenWhisk. This will allow you to debug actions that require one or more of the NodeJS [packages supported by OpenWhisk](https://dev-console.stage1.ng.bluemix.net/docs/openwhisk/openwhisk_reference.html#openwhisk_ref_javascript).
 
 ### Getting Help
 
