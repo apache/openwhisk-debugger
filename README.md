@@ -24,7 +24,16 @@ If you haven't yet attached to the action you are invoking, the invocation will 
 
 ## Attaching to an action
 
-Say for example you wish to attach to an action `foo`, and this action occurs in a sequence `seq`.
+You can attach to an attach on startup by passing the action name to the initial invocation. Say for example you wish to attach to an action `foo`, and this action occurs in a sequence `seq`:
+
+```
+% ./wskdb foo
+Attaching to foo
+   Creating action trampoline
+   Creating sequence splice seq
+```
+
+You may also choose to launch the debugger and attach to `foo` later:
 
 ```
 (wskdb) attach foo
@@ -39,6 +48,20 @@ If you wish to limit the instrumentation to the action, avoiding any containing 
 (wskdb) attach foo --action-only
 Attaching to foo
    Creating action trampoline
+```
+
+### Getting Help
+
+The short-hand for this is `-a`. To learn more about the options for each command, you can issue a `-h` request, e.g.
+```
+(wskdb) attach -h
+Usage: attach [options]
+
+	--help, -h
+		Displays help information about this script
+
+	--action-only, -a
+		Instrument just the action, not any rules or sequences in which it takes part
 ```
 
 ## Choosing CLI versus Browser-based Debugging
