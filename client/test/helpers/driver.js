@@ -3,15 +3,17 @@
 const test = require('ava').test;
 const uuid = require('uuid');
 const spawn = require('child_process').spawn;
+const Namer = require('../../lib/namer');
 
 function Driver() {
 }
+
 Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, args, rootPath) {
     test(shouldDoThisSuccessfully, t => {
 	return new Promise((resolve,reject) => {
 	    const child = spawn('node', ['wskdb.js'].concat(args || []), { cwd: rootPath || '../..' });
 
-	    const name = uuid.v4();
+	    const name = Namer.name('test');
 	    const steps = stepFn(name);
 	    
 	    var stepNumber = 0;
@@ -50,7 +52,7 @@ Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, args, rootPa
 		if (code === 0 && goody) {
 		    resolve();
 		} else {
-		    reject('code=${code} goody=${goody}');
+		    reject(`code=${code} goody=${goody}`);
 		}
 	    });
 	}).then(result => t.is(result));
