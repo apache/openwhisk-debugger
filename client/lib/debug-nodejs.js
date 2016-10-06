@@ -125,7 +125,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		    }
 		    if (!addrInUse) {
 			try { tmpfileCleanupCallback(); } catch (e) { }
-			ok_(done());
+			ok_(done);
 		    }
 		}
 		child.on('close', cleanUpSubprocesses);
