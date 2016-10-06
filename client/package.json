@@ -5,7 +5,7 @@
   "repository": "https://github.ibm.com/nickm/owdbg",
   "main": "client.js",
   "scripts": {
-    "test": "./node_modules/.bin/jshint wskdb.js lib/*.js lib/commands/*.js && ava --verbose"
+    "test": "./node_modules/.bin/jshint wskdb.js lib/*.js lib/commands/*.js && ava --verbose --serial"
   },
   "author": "",
   "license": "ISC",
