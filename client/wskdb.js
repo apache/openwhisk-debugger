@@ -15,6 +15,7 @@
  */
 
 var argv = require('argv'),
+    init = require('./lib/init').init,
     repl = require('./lib/repl').repl,
     colors = require('colors'),
     events = require('events'),
@@ -33,6 +34,8 @@ var argv = require('argv'),
 	host: 'https://owdbg-broker.mybluemix.net',
 	path: '/ws/client/register'
     };
+
+init();
 
 var commandLineOptionsConfig = [
     {name: 'use-cli-debugger', short: 'c', type: 'string', description: 'Favor the CLI for debug sessions over a GUI'},
