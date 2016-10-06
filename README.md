@@ -55,9 +55,11 @@ Attaching to foo
    Creating action trampoline
 ```
 
+The short-hand for this is `-a`. 
+
 ### Getting Help
 
-The short-hand for this is `-a`. To learn more about the options for each command, you can issue a `-h` request, e.g.
+To learn more about the options for each command, you can issue a `-h` request, e.g.
 ```
 (wskdb) attach -h
 Usage: attach [options]
