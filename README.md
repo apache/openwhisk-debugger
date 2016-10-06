@@ -50,6 +50,8 @@ Attaching to foo
    Creating action trampoline
 ```
 
+The first time you launch this, you will experience a small delay, as the debugger pulls in the NodeJS package dependencies supported by OpenWhisk. This will allow you to debug actions that require one or more of the NodeJS [packages supported by OpenWhisk](https://dev-console.stage1.ng.bluemix.net/docs/openwhisk/openwhisk_reference.html#openwhisk_ref_javascript).
+
 ### Getting Help
 
 The short-hand for this is `-a`. To learn more about the options for each command, you can issue a `-h` request, e.g.
