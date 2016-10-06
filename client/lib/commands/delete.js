@@ -38,7 +38,7 @@ exports.deleteAction = function deleteAction(wskprops, next, name) {
 	_list(ow, function(L) {
 	    require('inquirer')
 		.prompt([{ name: 'name', type: 'list',
-			   message: 'Which action do you wish to delete',
+			   message: 'Which action do you wish to delete?',
 			   choices: L.map(function(action) { return action.name; })
 			 }])
 		.then(function(response) { doDelete(response.name); });
