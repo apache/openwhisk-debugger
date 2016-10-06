@@ -1,6 +1,8 @@
 # OpenWhisk Debugger
 
-This project currently supports debugging NodeJS actions on your laptop. For now, you must have [NodeJS](https://nodejs.org) installed on your computer in order to use the debugger.
+This project currently supports debugging OpenWhisk actions written in NodeJS. The debugger will arrange things so that the actions you wish to debug will be offloaded from the main OpenWhisk servers and instead run on your laptop. You can then, from within the debugger, inspect and modify values, and even modify code.
+
+For now, you must have [NodeJS](https://nodejs.org) installed on your computer in order to use the debugger.
 
 ## Usage
 
