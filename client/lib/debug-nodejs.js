@@ -71,7 +71,10 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		    env: env
 		};
 		var child = spawn(path.join('node_modules', '.bin', 'node-debug'),
-				  ['--cli', '--debug-port', debugPort, '--web-port', webPort, tmpFilePath],
+				  ['--cli',
+				   '--debug-port', debugPort,
+				   '--web-port', webPort,
+				   tmpFilePath],
 				  spawnOpts);
 		var child2;
 		var addrInUse = false;
@@ -108,12 +111,6 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			console.error('stderr: ' + message);
 		    }
 		});
-
-	    /*var child = spawn('node', ['--debug', '--debug-brk', tmpFilePath], spawnOpts);
-	      console.log('SPAWN2');
-	      var child2 = spawn(path.join('node_modules', '.bin', 'node-inspector'), spawnOpts);
-	      console.log('OPEN');
-	      var child3 = open('http://127.0.0.1:8080/?port=5858', 'Google Chrome');*/
 
 		function cleanUpSubprocesses(err, stdout, stderr) {
 		    if (err) {
