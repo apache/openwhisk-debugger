@@ -70,21 +70,35 @@ ws.on('open', function open() {
     }, 5000);
 
     process.on('exit', function onExit() {
+	try {
+	    console.log('Goodbye!'.red);
+	    clearInterval(keepAlive);
+	    
+	    ws.send(JSON.stringify({
+		type: 'disconnect'
+	    }, function ack() {
+		ws.close();
+	    }));
+	} catch (e) {
+	}
+    });
+
+    //
+    // does the user want to attach to an action right up front?
+    //
+    var attachTo;
     try {
-	console.log('Goodbye!'.red);
-	clearInterval(keepAlive);
-
-	ws.send(JSON.stringify({
-	    type: 'disconnect'
-	}, function ack() {
-	    ws.close();
-	}));
+	attachTo = process.argv.slice(2).find(arg => {
+	    arg = arg.replace(/-/g, '');
+	    return !commandLineOptions.hasOwnProperty(arg) // not a long option
+		&& !commandLineOptionsConfig.find(opt => opt.short === arg); // and not a short option
+	});
     } catch (e) {
+	// uncomment this for debugging:
+	// console.error('error',e);
     }
-});
 
-
-    repl(wskprops, eventBus);
+    repl(wskprops, eventBus, attachTo);
 });
 
 ws.on('close', function() {

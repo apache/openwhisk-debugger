@@ -125,15 +125,16 @@ commandHandlers = {
     '?': help
 };
 
-function repl(wskprops, eventBus) {
-    prompt.prompt([{
-	name: 'command', message: '(wskdb)',
-	prefixMessage: '', // override the default question mark prefix
-	validate: function(line) {
-	    var commandLine = line.split(/\s+/);
-	    return line.length === 0 || commandHandlers[commandLine[0]] ? true : 'Invalid command';
-	}
-    }]).then(function(response) {
+/**
+ * This is the read-eval-print loop.
+ *
+ * @param wskprops is a map that provides the user's NAMESPACE and AUTH settings
+ * @param eventBus will be used to post and listen for inter-function communication
+ * @param attachTo if the user requested to attach to an action on launch
+ *
+ */
+function repl(wskprops, eventBus, attachTo) {
+    function handleReplCommand(response) {
 	if (response.command.length === 0) {
 	    // user hit return;
 	    return repl(wskprops, eventBus);
@@ -182,7 +183,20 @@ function repl(wskprops, eventBus) {
 	    // if async, then restart the repl right away
 	    repl(wskprops, eventBus);
 	}
-    });
+    } /* end of handleReplCommand */
+    
+    if (attachTo) {
+	handleReplCommand({ command: 'attach ' + attachTo });
+    } else {
+	prompt.prompt([{
+	    name: 'command', message: '(wskdb)',
+	    prefixMessage: '', // override the default question mark prefix
+	    validate: function(line) {
+		var commandLine = line.split(/\s+/);
+		return line.length === 0 || commandHandlers[commandLine[0]] ? true : 'Invalid command';
+	    }
+	}]).then(handleReplCommand);
+    }
 }
 
 exports.repl = repl;
