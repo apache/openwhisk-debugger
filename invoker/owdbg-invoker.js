@@ -18,8 +18,9 @@ var request = require('request');
 
 function main(params) {
     return new Promise(function(resolve, reject) {
-	console.log('Invoking ' + JSON.stringify(actualParameters));
+	console.log('Invoking', params);
 
+	try {
 	//
 	// remove debugging payload from the parameters we send to the debug session
 	//
@@ -28,7 +29,8 @@ function main(params) {
 	delete actualParameters.broker;
 	delete actualParameters.namespace;
 	delete actualParameters.onDone_trigger;
-	
+
+	    console.log('A');
 	var opts = {
 	    url: params.broker + '/invoke/begin',
 	    method: 'POST',
@@ -45,7 +47,7 @@ function main(params) {
 	    }
 	};
 
-	console.log('with options ' + JSON.stringify(opts));
+	console.log('with options', opts);
 	
 	request(opts, function(err, response, body) {
 	    if (err || response.statusCode != 200) {
@@ -92,6 +94,7 @@ function main(params) {
 		}
 	    }
 	});
+	} catch (e) { console.error(e.stack); reject(e); }
     });
 }
 //main({'broker':'https://owdbg.mybluemix.net','action':'foo/bar15'})
