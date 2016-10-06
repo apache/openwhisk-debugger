@@ -548,7 +548,7 @@ exports._invoke = function invoke() {
 			}
 		    }
 		});
-	    }, 1000);
+	    }, 300);
 	}
     }, function onError(err) {
 	console.error('Unable to invoke your specified action');
