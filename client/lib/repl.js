@@ -75,6 +75,11 @@ var invoke = {
     needsEventBus: true,
     synchronous: true
 };
+var fire = {
+    handler: require('./commands/fire').fire,
+    description: 'Fire a trigger',
+    synchronous: true
+};
 var list = {
     handler: lister.listToConsole,
     description: 'List available actions',
@@ -102,6 +107,9 @@ commandHandlers = {
     
     invoke: invoke,
     i: invoke,
+
+    fire: fire,
+    f: fire,
 
     attach: attach,
     a: attach,
