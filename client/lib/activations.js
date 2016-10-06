@@ -7,7 +7,11 @@ var pollIntervalMillis = 200,
 	path: '/api/v1'
     };
 
-exports.waitForActivationCompletion = function waitForActivationCompletion(wskprops, eventBus, waitForThisAction, activation) {
+/**
+ * Wait for activation completion
+ *
+ */
+exports.waitForActivationCompletion = function waitForActivationCompletion(wskprops, eventBus, waitForThisAction) {
     var key = wskprops.AUTH;
     var ow = openwhisk({
 	api: api.host + api.path,
@@ -16,42 +20,53 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
     });
 
     return new Promise((resolve, reject) => {
-	if (activation && activation.activationId) {
-	    // successfully invoked
-
-	    /*if (!attachedTo) {
-		console.log('Successfully invoked with activationId', activation.activationId);
-		
-	    } else {
-		// we'll wait for the result...
-	    }*/
-
+	//
+	// this is the poll function
+	//
+	var pollOnce = function() {
 	    //
-	    // wait for activation completion
+	    // scan the recent activations, looking for the
+	    // anticipated activation by invoked-entity name
 	    //
-	    var pollOnce = function() {
-		ow.activations.list({ limit: 10 }).then(list => {
-		    var allDone = false;
-		    for (var i = 0; i < list.length; i++) {
-			var activation = list[i];
-			if (activation.name === waitForThisAction) {
-			    ow.activations.get({ activation: activation.activationId })
-				.then(activationDetails => {
-				    console.log(JSON.stringify(activationDetails, undefined, 4));
-				    eventBus.emit('invocation-done', activationDetails);
-				    resolve(activationDetails);
-				}).catch(errorWhile('fetching activation detais', reject));
-			    allDone = true;
-			    break;
-			}
+	    ow.activations.list({ limit: 20 }).then(list => {
+		var allDone = false;
+		for (var i = 0; i < list.length; i++) {
+		    var activation = list[i];
+		    if (activation.name === waitForThisAction) {
+
+			//
+			// great! we found the anticipated activation
+			//
+			ow.activations.get({ activation: activation.activationId })
+			    .then(activationDetails => {
+				// print out the activation record
+				console.log(JSON.stringify(activationDetails, undefined, 4));
+
+				// let other async listeners know about it
+				eventBus.emit('invocation-done', activationDetails);
+
+				// and let the promise know about it
+				resolve(activationDetails);
+
+			    }).catch(errorWhile('fetching activation detais', reject));
+			
+			allDone = true;
+			break;
 		    }
-		    if (!allDone) {
-			setTimeout(pollOnce, pollIntervalMillis);
-		    }
+		}
+		if (!allDone) {
+		    //
+		    // not yet, try again in a little bit
+		    //
+		    setTimeout(pollOnce, pollIntervalMillis);
+		}
 		    
-		}).catch(errorWhile('listing activations', reject));
-	    };
-	    setTimeout(pollOnce, pollIntervalMillis);
-	}
+	    }).catch(errorWhile('listing activations', reject));
+	};
+
+	//
+	// start up the poller
+	//
+	setTimeout(pollOnce, pollIntervalMillis);
     });
 };
