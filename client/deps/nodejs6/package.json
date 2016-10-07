@@ -1,6 +1,9 @@
 {
   "name": "openwhisk-nodejs6-prerequisites",
   "version": "0.0.1",
+  "description": "The npm modules supported by the OpenWhisk NodeJS6 invoker",
+  "repository": {},
+  "license": "Apache-2.0",
   "dependencies": {
     "apn": "^1.7.5",
     "async": "^1.5.2",
