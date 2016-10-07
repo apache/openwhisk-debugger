@@ -53,7 +53,7 @@ Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, args, rootPa
 		    goody = false;
 		    reject('Step ' + (stepNumber - 1) + ' failed');
 			
-		} else if (data.indexOf('ok') == 0 || data.indexOf('break in') >= 0) {
+		} else if (data.indexOf('ok') == 0 || data.indexOf('break in') >= 0 || data.indexOf('stopped') >= 0) {
 		    goody = true;
 			
 		    if (stepNumber === steps.length) {
