@@ -15,30 +15,56 @@
  */
 
 var fs = require('fs'),
-    exec = require('child_process').execSync,
+    exec = require('child_process').exec,
     path = require('path'),
-    MARKER = '.initDone';
+    MARKER = '.initDone',
+    nodejs6_deps = path.join('deps', 'nodejs6');
 
 function touch() {
     fs.closeSync(fs.openSync(MARKER, 'w'));
 }
 function initDone() {
     try {
-	return fs.statSync(MARKER).isFile();
+	return fs.statSync(MARKER).isFile()
+	    && fs.statSync('node_modules').isDirectory()
+	    && fs.statSync(nodejs6_deps).isDirectory();
     } catch (e) {
 	return false;
     }
 }
 
-function doInit() {
-    console.log('Doing one-time init');
-    exec('npm install', { cwd: path.join('deps', 'nodejs6'), stdio: 'inherit' });
-    
-    touch();
-}
-
 exports.init = function init() {
-    if (!initDone()) {
-	doInit();
-    }
-};
+    return new Promise((resolve, reject) => {
+	if (initDone()) {
+	    return resolve();
+	}
+
+	console.log('>>> Please be patient while we finish up the installation of the OpenWhisk Debugger.');
+	console.log('>>> This may take 60-90 seconds');
+
+	var dots = setInterval(function() {
+	    process.stdout.write('.');
+	}, 1000);
+    
+	exec('npm install', { cwd: process.cwd() /*, stdio: 'inherit'*/ }, (err) => {
+	    if (err) {
+		return reject(err);
+	    }
+	    
+	    exec('npm install', { cwd: nodejs6_deps/*, stdio: 'inherit'*/ }, (err) => {
+		if (err) {
+		    return reject(err);
+		}
+		
+		touch();
+		clearInterval(dots);
+
+		console.log();
+		console.log('>>> Great! The one-time initialization has completed.');
+		console.log();
+
+		resolve();
+	    });
+	});
+    });
+}
