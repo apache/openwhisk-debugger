@@ -11,7 +11,6 @@ For now, you must have [NodeJS](https://nodejs.org) installed on your computer i
 Start the debug client:
 ```
 % cd client
-% npm install  <-- you need do this only once
 % ./wskdb
 Welcome to the OpenWhisk Debugger
 
@@ -20,7 +19,7 @@ Welcome to the OpenWhisk Debugger
 
 You will now be in the `wsdk` REPL. Issue `help` to see the list of available commands. 
 
-Note: the first time you launch this, you will experience a small delay, as the debugger pulls in the NodeJS package dependencies supported by OpenWhisk. This will allow you to debug actions that require one or more of the NodeJS [packages supported by OpenWhisk](https://dev-console.stage1.ng.bluemix.net/docs/openwhisk/openwhisk_reference.html#openwhisk_ref_javascript).
+Note: the first time you launch `wskdb`, you will experience a 60-90 second delay, as the debugger finishes up the installation. This includes pulling in the package dependencies supported by OpenWhisk. These dependencies will allow you to debug actions that require one or more of the NodeJS [packages supported by OpenWhisk](https://dev-console.stage1.ng.bluemix.net/docs/openwhisk/openwhisk_reference.html#openwhisk_ref_javascript).
 
 
 ## Invoking an action
