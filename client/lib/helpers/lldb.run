@@ -1,0 +1,2 @@
+breakpoint set --name main --ignore-count 1 --one-shot
+run

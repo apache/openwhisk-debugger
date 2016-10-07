@@ -23,6 +23,7 @@ var argv = require('argv'),
     eventBus = new events.EventEmitter(),
     WebSocket = require('ws'),
     debugNodeJS = require('./lib/debug-nodejs').debug,
+    debugSwift = require('./lib/debug-swift').debug,
     expandHomeDir = require('expand-home-dir'),
     propertiesParser = require('properties-parser'),
 
@@ -146,8 +147,24 @@ ws.on('message', function(data, flags) {
 	    };
 
 	    if (message.onDone_trigger) {
-		if (message.action && message.action.exec && message.action.exec.kind.indexOf('nodejs') >= 0) {
-		    debugNodeJS(message, ws, { trigger: message.onDone_trigger }, done, commandLineOptions, eventBus);
+		if (message.action && message.action.exec) {
+		    var kind = message.action.exec.kind;
+		    var debugHandler;
+		    
+		    if (!kind || kind.indexOf('nodejs') >= 0) {
+			// !kind because nodejs is the default
+			debugHandler = debugNodeJS;
+		    } else if (kind.indexOf('swift') >= 0) {
+			debugHandler = debugSwift;
+		    }
+
+		    if (debugHandler) {
+			debugHandler(message, ws, { trigger: message.onDone_trigger }, done, commandLineOptions, eventBus);
+		    } else {
+			console.error('Unable to complete invocation, because this action\'s kind is not yet handled: ' + kind);
+			circuitBreaker();
+		    }
+
 		} else {
 		    console.error('Unable to complete invocation: no action code to debug');
 		    circuitBreaker();
