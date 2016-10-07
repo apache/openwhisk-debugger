@@ -166,6 +166,8 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 	} catch (e) {
 	    console.error(e);
 	    console.error(e.stack);
+	    try { tmpfileCleanupCallback(); } catch (e) { }
+	    done();
 	}
     });
 };
