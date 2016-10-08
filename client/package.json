@@ -14,7 +14,7 @@
     "colors": "^1.1.2",
     "columnify": "^1.5.4",
     "expand-home-dir": "0.0.3",
-    "inquirer": "git@github.com:starpit/Inquirer.js.git",
+    "inquirer": "git://github.com/starpit/Inquirer.js.git",
     "node-inspector": "^0.12.8",
     "open": "0.0.5",
     "openwhisk": "^2.1.3",
