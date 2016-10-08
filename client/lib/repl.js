@@ -54,7 +54,7 @@ var attach = {
     enumerate: lister.list,
     description: 'Attach to an action',
     synchronous: true,
-    options: [{ name: 'action-only', short: 'a', type: 'string', description: 'Instrument just the action, not any rules or sequences in which it takes part' }]
+    options: [{ name: 'all', short: 'a', type: 'string', description: 'Instrument the action, plus any rules or sequences in which it takes part' }]
 };
 var detach = {
     handler: rewriter.detach,

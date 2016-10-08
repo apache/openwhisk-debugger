@@ -32,13 +32,12 @@ If you haven't yet attached to the action you are invoking, the invocation will 
 
 ## Attaching to an action
 
-You can attach to an attach on startup by passing the action name to the initial invocation. Say for example you wish to attach to an action `foo`, and this action occurs in a sequence `seq`:
+You can attach to an attach on startup by passing the action name to the initial invocation. Say for example you wish to attach to an action `foo`:
 
 ```
 % ./wskdb foo
 Attaching to foo
    Creating action trampoline
-   Creating sequence splice seq
 ```
 
 You may also choose to launch the debugger and attach to `foo` later:
@@ -47,15 +46,15 @@ You may also choose to launch the debugger and attach to `foo` later:
 (wskdb) attach foo
 Attaching to foo
    Creating action trampoline
-   Creating sequence splice seq
 ```
 
-If you wish to limit the instrumentation to the action, avoiding any containing rules or sequences:
+If you wish to extend the instrumentation to include any containing rules or sequences (in this case, the action occurs in a sequence `seq`):
 
 ```
-(wskdb) attach foo --action-only
+(wskdb) attach foo --all
 Attaching to foo
    Creating action trampoline
+   Creating sequence splice seq
 ```
 
 The short-hand for this is `-a`. 
