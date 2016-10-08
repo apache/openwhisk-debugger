@@ -140,7 +140,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 				      spawnOpts);
 		    child.on('exit', (code) => {
 			if (code !== 0) {
-			    console.error('The debugger exited abnormally with code ' + code);
+			    console.error('The NodeJS debugger exited abnormally with code ' + code);
 			}
 		    });
 
