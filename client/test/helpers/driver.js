@@ -20,6 +20,7 @@ const test = require('ava').test;
 const uuid = require('uuid');
 const spawn = require('child_process').spawn;
 const Namer = require('../../lib/namer');
+const colors = require('colors');
 
 function Driver() {
 }
@@ -36,7 +37,7 @@ Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, args, rootPa
 	    var goody = false;
 	    
 	    function doStep() {
-		// console.log("STEP " + steps[stepNumber]);
+		// console.log(("STEP " + steps[stepNumber]).green);
 		child.stdout.pause();
 		child.stdin.write(steps[stepNumber++] + '\n');
 		child.stdout.resume();
@@ -44,16 +45,19 @@ Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, args, rootPa
 	    doStep(); // do the first step
 		
 	    child.stderr.on('data', (data) => {
-		console.error('stderr: ' + data);
+		console.error(('stderr: ' + data).red);
 	    });
 		
 	    child.stdout.on('data', (data) => {
-		//console.log('stdout: ' + data + " ||| " + data.indexOf('(wskdb)'))
+		// console.log('stdout: '.blue + data);
 		if (data.indexOf('Error') >= 0) {
 		    goody = false;
 		    reject('Step ' + (stepNumber - 1) + ' failed');
 			
-		} else if (data.indexOf('ok') == 0 || data.indexOf('break in') >= 0 || data.indexOf('stopped') >= 0) {
+		} else if (data.indexOf('ok') == 0
+			   || data.indexOf('\nok\n') >= 0
+			   || data.indexOf('break in') >= 0
+			   || data.indexOf('stopped') >= 0) {
 		    goody = true;
 			
 		    if (stepNumber === steps.length) {
