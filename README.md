@@ -4,8 +4,6 @@ This project currently supports debugging OpenWhisk actions written in NodeJS an
 
 The debugger currently supports inspecting individual actions and actions within sequences. In the near future, we hope to add the ability to debug actions run from rules as well.
 
-For now, you must have [NodeJS](https://nodejs.org) installed on your computer in order to use the debugger.
-
 ## Usage
 
 Start the debug client:
