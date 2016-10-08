@@ -69,8 +69,8 @@ Usage: attach [options]
 	--help, -h
 		Displays help information about this script
 
-	--action-only, -a
-		Instrument just the action, not any rules or sequences in which it takes part
+	--all, -a
+		Instrument the action, plus any rules or sequences in which it takes part
 ```
 
 ## Choosing CLI versus Browser-based Debugging
