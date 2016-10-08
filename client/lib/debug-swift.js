@@ -66,8 +66,8 @@ function debugIt(eventBus, executablePath, executableCleanup) {
 				   executablePath],
 				  spawnOpts);
 		child.on('exit', (code) => {
-		    if (code !== 0) {
-			console.error('The debugger exited abnormally with code ' + code);
+		    if (code !== 0 && code !== null) {
+			console.error('The Swift debugger exited abnormally with code ' + code + ' ' + (code === 'null'));
 			reject(code);
 		    } else {
 			//executableCleanup();
