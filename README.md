@@ -1,6 +1,6 @@
 # OpenWhisk Debugger
 
-This project currently supports debugging OpenWhisk actions written in NodeJS. The debugger will arrange things so that the actions you wish to debug will be offloaded from the main OpenWhisk servers and instead run on your laptop. You can then, from within the debugger, inspect and modify values, and even modify code. At this point in time, the modifications will be one-time only. In the near future, we hope to add the ability to push any code updates back to OpenWhisk.
+This project currently supports debugging OpenWhisk actions written in NodeJS and Swift. The debugger will arrange things so that the actions you wish to debug will be offloaded from the main OpenWhisk servers and instead run on your laptop. You can then, from within the debugger, inspect and modify values, and even modify code. At this point in time, the modifications will be one-time only. In the near future, we hope to add the ability to push any code updates back to OpenWhisk.
 
 The debugger currently supports inspecting individual actions and actions within sequences. In the near future, we hope to add the ability to debug actions run from rules as well.
 
@@ -21,6 +21,11 @@ You will now be in the `wsdk` REPL. Issue `help` to see the list of available co
 
 Note: the first time you launch `wskdb`, you will experience a 60-90 second delay, as the debugger finishes up the installation. This includes pulling in the package dependencies supported by OpenWhisk. These dependencies will allow you to debug actions that require one or more of the NodeJS [packages supported by OpenWhisk](https://dev-console.stage1.ng.bluemix.net/docs/openwhisk/openwhisk_reference.html#openwhisk_ref_javascript).
 
+## Prerequisites
+
+If you wish to debug NodeJS actions, you must currently have a version of NodeJS installed on your local machine that is compatible with the actions you wish to debug. Also note that `wskdb` currently does not attempt to employ `nvm` in order to leverage a runtime that matches the action being debugged.
+
+If you wish to debug Swift actions, you must have `swiftc` and `lldb` installed. On MacOS, for example, you can acquire these by installing [XCode](https://itunes.apple.com/us/app/xcode/id497799835?mt=12).
 
 ## Invoking an action
 The syntax here is almost identical to that of the `wsk` CLI.
