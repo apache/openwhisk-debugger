@@ -86,6 +86,11 @@ var list = {
     synchronous: true,
     options: [{ name: 'full', short: 'f', type: 'string', description: 'Show all actions, including debugging artifacts' }]
 };
+var inspect = {
+    handler: require('./commands/inspect').inspect,
+    description: 'Inspect the details of an OpenWhisk action',
+    synchronous: true
+};
 var clean = {
     handler: rewriter.clean,
     description: 'Clean up debugging artifacts',
@@ -108,6 +113,9 @@ commandHandlers = {
     invoke: invoke,
     i: invoke,
 
+    inspect: inspect,
+    ins: inspect,
+    
     fire: fire,
     f: fire,
 

@@ -41,6 +41,13 @@ var uuid = require('uuid'),
 /** the dictionary of live attachments to actions */
 var attached = {}, chainAttached = {};
 
+exports.isDirectlyAttachedTo = function isDirectlyAttachedTo(name) {
+    return attached[name];
+};
+exports.isChainAttachedTo = function isChainAttachedTo(name) {
+    return chainAttached[name];
+};
+
 function echoContinuation(entity, entityNamespace) {
     return {
 	annotations: [{ key: 'debug', value: '/' + entityNamespace + '/' + entity }],

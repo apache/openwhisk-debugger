@@ -67,4 +67,4 @@ exports.init = function init() {
 	    });
 	});
     });
-}
+};
