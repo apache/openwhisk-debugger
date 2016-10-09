@@ -58,6 +58,10 @@ function echoContinuation(entity, entityNamespace) {
     };
 }
 
+function doWithRetry(promiseFunc) {
+    return promiseFunc().catch((err) => doWithRetry(promiseFunc));
+}
+
 /**
  * Clean up any residual debugging artifacts
  *
@@ -94,9 +98,7 @@ exports.clean = function clean(wskprops, next) {
 			    .catch(errorWhile('cleaning ' + entity.name, countDownError));
 		    }
 		    if (type === 'rule') {
-			ow.rules.disable(params)
-			    .then(clean)
-			    .catch(errorWhile('disabling rule ' + entity.name, countDownError));
+			doWithRetry(() => ow.rules.disable(params).then(clean));
 		    } else {
 			clean();
 		    }
