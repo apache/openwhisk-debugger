@@ -14,6 +14,7 @@ exports.inspect = function inspect(wskprops, next, name, property) {
     function doInspect(name) {
 	const attached = isDirectlyAttachedTo(name);
 	const chainAttached = isChainAttachedTo(name);
+	const chainColor = name => name[chainAttached && isDirectlyAttachedTo(name) ? 'green' : 'reset'];
 
 	console.log( ('Attached = ' + (attached ? 'yes' : chainAttached ? 'yes, to one or more parts' : 'no'))
 		     [attached ? 'blue' : chainAttached ? 'blue' : 'dim'] );
@@ -27,7 +28,7 @@ exports.inspect = function inspect(wskprops, next, name, property) {
 		    console.log(details.exec.components
 				.map(a => {
 				    const name = a.substring(a.lastIndexOf('/') + 1);
-				    return name[chainAttached && isDirectlyAttachedTo(name) ? 'green' : 'reset'];
+				    return chainColor(name);
 				}).join(' -> '));
 		    
 		} else {
@@ -45,7 +46,7 @@ exports.inspect = function inspect(wskprops, next, name, property) {
 		    // then the entity exists, but isn't an action. try rules, next
 		    //
 		    ow.rules.get({ ruleName: name })
-			.then(okAfter(rule => console.log(`${rule.trigger} |-> ${rule.action}`), next))
+			.then(okAfter(rule => console.log(`${rule.trigger} |-> ` + chainColor(rule.action)), next))
 			.catch(errorWhile('inspecting entity', next));
 		}
 	    });
