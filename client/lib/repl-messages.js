@@ -25,6 +25,13 @@ exports.ok_ = function ok_(next) {
     exports.ok(next)();
 };
 
+exports.okAfter = function okAfter(f, next) {
+    return function() {
+	f.apply(undefined, arguments);
+	exports.ok_(next);
+    };
+};
+
 /**
  * Log an error, and continue
  *
