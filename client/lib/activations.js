@@ -64,7 +64,7 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
 				// and let the promise know about it
 				resolve(activationDetails);
 
-			    }).catch(errorWhile('fetching activation detais', reject));
+			    }).catch(errorWhile('fetching activation details', reject));
 			
 			allDone = true;
 			break;
