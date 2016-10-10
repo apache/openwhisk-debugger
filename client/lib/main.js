@@ -70,9 +70,14 @@ ws.on('open', function open() {
     }));
 
     var keepAlive = setInterval(function poke() {
-	ws.send(JSON.stringify({
-	    type: 'keep-alive'
-	}));
+	try {
+	    ws.send(JSON.stringify({
+		type: 'keep-alive'
+	    }));
+	} catch (e) {
+	    console.error('It looks like your network went offline. Please restart wskdb when your network is live.');
+	    process.exit(1);
+	}
     }, 5000);
 
     process.on('exit', function onExit() {
