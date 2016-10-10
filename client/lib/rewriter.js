@@ -350,7 +350,7 @@ exports.attach = function attach(wskprops, options, next, entity) {
 	    // remember the names, so that we can route invocations to the debug version
 	    attached[entity] = names;
 
-	    if (!options || !options['all']) {
+	    if (!options || !options.all) {
 		//
 		// user asked not to instrument any rules or sequences
 		//
