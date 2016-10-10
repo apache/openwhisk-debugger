@@ -106,6 +106,16 @@ var deleteAction = {
     description: 'Delete an action',
     synchronous: true
 };
+var diff = {
+    handler: require('./commands/diff').diff,
+    description: 'Show the pending diffs of a given action',
+    synchronous: true
+};
+var publish = {
+    handler: require('./commands/publish').publish,
+    description: 'Publish pending changes to a given action',
+    synchronous: true
+};
 commandHandlers = {
     list: list,
     l: list,
@@ -115,6 +125,7 @@ commandHandlers = {
 
     inspect: inspect,
     ins: inspect,
+    get: inspect,
     
     fire: fire,
     f: fire,
@@ -124,6 +135,10 @@ commandHandlers = {
 
     detach: detach,
     d: detach,
+
+    diff: diff,
+    publish: publish,
+    p: publish,
 
     exit: exit,
     quit: exit,

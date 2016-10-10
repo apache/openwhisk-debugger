@@ -17,6 +17,7 @@
 var fs = require('fs'),
     ok_ = require('./repl-messages').ok_,
     tmp = require('tmp'),
+    diff = require('./diff'),
     open = require('open'),
     path = require('path'),
     spawn = require('child_process').spawn;
@@ -52,11 +53,19 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
     code += '// The first breakpoint will be in your main method\n';
     code += '//\n';
     code += '\n\nvar bootstrap = require(\'debug-bootstrap\')(\'' + message.key + '\', \'' + message.action.namespace + '\', \'' + echoChamberNames.trigger + '\');\nbootstrap(main, ' + JSON.stringify(message.actualParameters || {}) + ');';
+
+    //
+    // since we've modified the code, we need to remember the diffs *we* are responsible for,
+    // so that we can ignore them when determining whether the user has modified the file
+    //
+    var removeBootstrapPatch = diff.createPatch(code, message.action.exec.code);
     
-    tmp.file(function onTempFileCreation(err, tmpFilePath, fd, tmpfileCleanupCallback) {
-	// console.log('TMP ' + tmpFilePath);
+    tmp.dir({ prefix: 'wskdb-', unsafeCleanup: true}, function onTempDirCreation(err, tmpDirPath, tmpdirCleanupCallback) {
+	// console.log('TMP ' + tmpdirPath);
+	var tmpFilePath = path.join(tmpDirPath, message.action.name + '.js');
+
 	try {
-	fs.write(fd, code, 0, 'utf8', function onFileWriteCompletion(err, written, string) {
+	    fs.writeFile(tmpFilePath, code, 0, 'utf8', function onFileWriteCompletion(err, written, string) {
 
             // we need to update the NODE_PATH env var, to add our local modules
 	    var env = Object.assign({}, process.env);
@@ -74,13 +83,17 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 				  ['--cli',
 				   '--debug-port', debugPort,
 				   '--web-port', webPort,
+				   '--save-live-edit',
 				   tmpFilePath],
 				  spawnOpts);
 		var child2;
 		var addrInUse = false;
-		
-		child.stdout.on('data', function(data) {
-		    if (!child2) {
+
+		//
+		// a bit of a hack here: wait a bit to see if we get an EADDRINUSE on stderr
+		//
+		setTimeout(() => child.stdout.on('data', function(data) {
+		    if (!child2 && !addrInUse) {
 			var url = 'http://127.0.0.1:' + webPort + '/?port=' + debugPort;
 			child2 = open(url, 'Google Chrome');
 
@@ -91,7 +104,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			console.log('');
 			console.log('');
 		    }
-		});
+		}), 500);
 
 		// for debugging the child invocation:
 		child.stderr.on('data', (message) => {
@@ -104,7 +117,10 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			//
 			addrInUse = true;
 		    } else if (message.indexOf('ResourceTree') < 0
-			       && message.indexOf('Assertion failed') < 0) {
+			       && message.indexOf('Assertion failed') < 0
+			       && message.indexOf('listening on port') < 0
+			       && message.indexOf('another process already listening') < 0
+			       && message.indexOf('use a different port') < 0) {
 			//
 			// ignore some internal errors in node-inspector
 			//
@@ -121,33 +137,60 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			}
 		    }
 		    if (!addrInUse) {
-			try { tmpfileCleanupCallback(); } catch (e) { }
-			ok_(done);
+			diff.rememberIfChanged(message.action, tmpFilePath, tmpdirCleanupCallback, removeBootstrapPatch);
+
+			if (!child.__killedByWSKDBInvocationDone) {
+			    // if we were killed by an invocation-done event, then the ok was already issued elsewhere
+			    ok_(done);
+			} else {
+			    done();
+			}
 		    }
 		}
-		child.on('close', cleanUpSubprocesses);
+		child.on('exit', cleanUpSubprocesses);
+
+		//
+		// the activation that we are debugging has
+		// finished. kill the child debugger process
+		//
+		eventBus.on('invocation-done', () => {
+		    try {
+			child.__killedByWSKDBInvocationDone = true;
+			child.kill();
+			child.kill('SIGKILL');
+		    } catch (err) {
+			console.error('Error cleaning up after activation completion', err);
+		    }
+		});
+
 	    } /* end of trySpawnWithBrowser */
 
 	    function spawnWithCLI() {
-		var spawnOpts = {
-		    cwd: process.cwd(),
-		    stdio: ['inherit', 'inherit', 'inherit'],
-		    env: env
-		};
 		try {
+		    var spawnOpts = {
+			cwd: process.cwd(),
+			stdio: ['inherit', 'inherit', 'inherit'],
+			env: env
+		    };
 		    var child = spawn('node',
 				      ['debug', tmpFilePath],
 				      spawnOpts);
+
+		    //
+		    // the activation that we are debugging has
+		    // finished. kill the child debugger process
+		    //
+		    eventBus.on('invocation-done', () => child.kill());
+
+		    //
+		    // the child debugger process has terminated, clean things up
+		    //
 		    child.on('exit', (code) => {
 			if (code !== 0) {
 			    console.error('The NodeJS debugger exited abnormally with code ' + code);
 			}
-		    });
 
-		    eventBus.on('invocation-done', () => child.kill());
-
-		    child.on('close', () => {
-			try { tmpfileCleanupCallback(); } catch (e) { }
+			diff.rememberIfChanged(message.action, tmpFilePath, tmpdirCleanupCallback, removeBootstrapPatch);
 			done(); // we don't need to "ok" here, as the invoker will do that for us
 		    });
 		} catch (e) {
@@ -166,7 +209,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 	} catch (e) {
 	    console.error(e);
 	    console.error(e.stack);
-	    try { tmpfileCleanupCallback(); } catch (e) { }
+	    try { tmpdirCleanupCallback(); } catch (e) { }
 	    done();
 	}
     });
