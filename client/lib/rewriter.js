@@ -345,43 +345,49 @@ exports.attach = function attach(wskprops, options, next, entity) {
 	var entityNamespace = wskprops.NAMESPACE;
 	var ow = setupOpenWhisk(wskprops);
 
-	console.log('   Creating action trampoline'.green);
-	UpstreamAdapter.create(ow, entity, entityNamespace).then(names => {
-	    // remember the names, so that we can route invocations to the debug version
-	    attached[entity] = names;
+	var doAttach = function doAttach() {
+	    console.log('   Creating action trampoline'.green);
+	    UpstreamAdapter.create(ow, entity, entityNamespace).then(names => {
+		// remember the names, so that we can route invocations to the debug version
+		attached[entity] = names;
 
-	    if (!options || !options.all) {
-		//
-		// user asked not to instrument any rules or sequences
-		//
-		return ok_(next);
-	    }
-	    doPar(ow, 'action', entity, next, (otherEntityWithDetails, countDown) => {
-		if (SequenceRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
+		if (!options || !options.all) {
 		    //
-		    // splice the sequence!
+		    // user asked not to instrument any rules or sequences
 		    //
-		    console.log('   Creating sequence splice'.green, otherEntityWithDetails.name);
-		    spliceSequence(ow, otherEntityWithDetails, entity, entityNamespace, names)
-			.then(countDown)
-			.catch(errorWhile('creating sequence splice', countDown));
-
-		} else {
-		    countDown();
+		    return ok_(next);
 		}
-	    });
+		doPar(ow, 'action', entity, next, (otherEntityWithDetails, countDown) => {
+		    if (SequenceRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
+			//
+			// splice the sequence!
+			//
+			console.log('   Creating sequence splice'.green, otherEntityWithDetails.name);
+			spliceSequence(ow, otherEntityWithDetails, entity, entityNamespace, names)
+			    .then(countDown)
+			    .catch(errorWhile('creating sequence splice', countDown));
+			
+		    } else {
+			countDown();
+		    }
+		});
 
-	    doPar(ow, 'rule', entity, next, (otherEntityWithDetails, countDown) => {
-		if (RuleRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
-		    //
-		    // clone the rule!
-		    //
-		    console.log('   Creating rule clone'.green, otherEntityWithDetails.name);
-		    RuleRewriter.rewrite(ow, otherEntityWithDetails, entity, entityNamespace, names)
-			.then(countDown, errorWhile('creating rule clone', countDown));
-		}
+		doPar(ow, 'rule', entity, next, (otherEntityWithDetails, countDown) => {
+		    if (RuleRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
+			//
+			// clone the rule!
+			//
+			console.log('   Creating rule clone'.green, otherEntityWithDetails.name);
+			RuleRewriter.rewrite(ow, otherEntityWithDetails, entity, entityNamespace, names)
+			    .then(countDown, errorWhile('creating rule clone', countDown));
+		    }
+		});
 	    });
-	});
+	}; /* end of doAttach */
+	
+	ow.actions.get({ actionName: entity })
+	    .then(doAttach)
+	    .catch(errorWhile('looking up action', next));
 	
     } catch (e) {
 	console.error(e);
@@ -547,7 +553,8 @@ exports._invoke = function invoke() {
 	waitForThisAction = attachedTo.continuationName;
     }
 
-    console.log('Invoking', action);
+    //console.log('Invoking', action);
+    
     if (!action) {
 	console.error('Please provide an action to invoke'.red);
 	return next();
@@ -556,7 +563,7 @@ exports._invoke = function invoke() {
     var ow = setupOpenWhisk(wskprops);
 
     ow.actions.invoke({ actionName: invokeThisAction, params: params })
-	.then(waitForActivationCompletion.bind(undefined, wskprops, eventBus, waitForThisAction))
+	.then(waitForActivationCompletion.bind(undefined, wskprops, eventBus, waitForThisAction, { result: true }))
 	.then(ok(next))
 	.catch(errorWhile('invoking your specified action', next));
 };
