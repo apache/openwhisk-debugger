@@ -27,7 +27,7 @@ var pollIntervalMillis = 200,
  * Wait for activation completion
  *
  */
-exports.waitForActivationCompletion = function waitForActivationCompletion(wskprops, eventBus, waitForThisAction) {
+exports.waitForActivationCompletion = function waitForActivationCompletion(wskprops, eventBus, waitForThisAction, options) {
     var key = wskprops.AUTH;
     var ow = openwhisk({
 	api: api.host + api.path,
@@ -55,6 +55,11 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
 			//
 			ow.activations.get({ activation: activation.activationId })
 			    .then(activationDetails => {
+
+				if (options && options.result) {
+				    activationDetails = activationDetails.response.result;
+				}
+				
 				// print out the activation record
 				console.log(JSON.stringify(activationDetails, undefined, 4));
 
