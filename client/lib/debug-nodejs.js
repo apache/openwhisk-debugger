@@ -18,6 +18,7 @@ var fs = require('fs'),
     ok_ = require('./repl-messages').ok_,
     tmp = require('tmp'),
     diff = require('./diff'),
+    kill = require('tree-kill'),
     open = require('open'),
     path = require('path'),
     spawn = require('child_process').spawn;
@@ -156,8 +157,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		eventBus.on('invocation-done', () => {
 		    try {
 			child.__killedByWSKDBInvocationDone = true;
-			child.kill();
-			child.kill('SIGKILL');
+			kill(child.pid);
 		    } catch (err) {
 			console.error('Error cleaning up after activation completion', err);
 		    }
@@ -180,7 +180,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		    // the activation that we are debugging has
 		    // finished. kill the child debugger process
 		    //
-		    eventBus.on('invocation-done', () => child.kill());
+		    eventBus.on('invocation-done', () => kill(pid));
 
 		    //
 		    // the child debugger process has terminated, clean things up
