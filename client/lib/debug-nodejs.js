@@ -101,6 +101,8 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		var child2;
 		var addrInUse = false;
 
+		console.log("SPAWN", webPort, debugPort);
+		
 		//
 		// a bit of a hack here: wait a bit to see if we get an EADDRINUSE on stderr
 		//
@@ -121,6 +123,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		// for debugging the child invocation:
 		child.stderr.on('data', (message) => {
 		    message = message.toString();
+
 		    if (message.indexOf('EADDRINUSE') >= 0) {
 			//
 			// oops, we'll need to try another pair of
@@ -128,6 +131,8 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			// handler below
 			//
 			addrInUse = true;
+			kill(child.pid);
+
 		    } else if (message.indexOf('ResourceTree') < 0
 			       && message.indexOf('Assertion failed') < 0
 			       && message.indexOf('listening on port') < 0
@@ -136,7 +141,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			//
 			// ignore some internal errors in node-inspector
 			//
-			console.error('stderr: ' + message);
+			console.error('stderr: '.red + message);
 		    }
 		});
 
@@ -198,7 +203,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			message = message.toString();
 			if (message.indexOf('EADDRINUSE') >= 0) {
 			    addrInUse = true;
-			    kill(child);
+			    kill(child.pid);
 			}
 		    });
 				    
