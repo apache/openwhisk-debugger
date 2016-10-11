@@ -25,8 +25,8 @@ const colors = require('colors');
 function Driver() {
 }
 
-Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, args, rootPath) {
-    test(shouldDoThisSuccessfully, t => {
+function doTest(expectFailure, shouldDoThisSuccessfully, stepFn, args, rootPath) {
+    return test(shouldDoThisSuccessfully, t => {
 	return new Promise((resolve,reject) => {
 	    const child = spawn('node', ['wskdb.js'].concat(args || []), { cwd: rootPath || '../..' });
 
@@ -35,24 +35,57 @@ Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, args, rootPa
 	    
 	    var stepNumber = 0;
 	    var goody = false;
-	    
+
+	    // for the dead man's switch
+	    var lastStep;
+	    var lastOut;
+
 	    function doStep() {
 		// console.log(("STEP " + steps[stepNumber]).green);
-		child.stdout.pause();
+		lastStep = Date.now();
 		child.stdin.write(steps[stepNumber++] + '\n');
-		child.stdout.resume();
+	    }
+	    function redoStep() {
+		// console.log(("REDO STEP " + steps[stepNumber]).red);
+		child.stdin.write(steps[stepNumber - 1] + '\n');
 	    }
 	    doStep(); // do the first step
-		
+
+	    setInterval(function deadMansSwitch() {
+		if (lastStep > lastOut || (lastOut - lastStep < 100 && Date.now() - lastStep > 2000)) {
+		    redoStep();
+		}
+	    }, 2000);
+
+	    function errorInOutput() {
+		goody = false;
+		if (expectFailure) {
+		    resolve();
+		    return true;
+		} else {
+		    reject('Step ' + (stepNumber - 1) + ' failed');
+		    return false;
+		}
+	    }
+	    
 	    child.stderr.on('data', (data) => {
+		if (data.toString().indexOf('Error') >= 0) {
+		    if (errorInOutput()) {
+			//
+			// don't print the error, as this was expected
+			//
+			return;
+		    }
+		}
 		console.error(('stderr: ' + data).red);
 	    });
-		
+
 	    child.stdout.on('data', (data) => {
 		// console.log('stdout: '.blue + data);
+		lastOut = Date.now(); // for the dead man's switch
+		
 		if (data.indexOf('Error') >= 0) {
-		    goody = false;
-		    reject('Step ' + (stepNumber - 1) + ' failed');
+		    errorInOutput();
 			
 		} else if (data.indexOf('ok') == 0
 			   || data.indexOf('\nok\n') >= 0
@@ -70,13 +103,33 @@ Driver.prototype.it = function it(shouldDoThisSuccessfully, stepFn, args, rootPa
 	    });
 	    child.on('exit', (code) => {
 		if (code === 0 && goody) {
-		    resolve();
+		    if (expectFailure) {
+			reject('zero exit code');
+		    } else {
+			resolve();
+		    }
 		} else {
-		    reject(`code=${code} goody=${goody}`);
+		    if (expectFailure) {
+			resolve();
+		    } else {
+			reject();
+		    }
 		}
 	    });
 	}).then(result => t.is(result));
     });
 } /* the end of it! */
+
+function should(shouldDoThisSuccessfully, stepFn, args, rootPath) {
+    return doTest(false, shouldDoThisSuccessfully, stepFn, args, rootPath);
+};
+function shouldFail(shouldDoThisSuccessfully, stepFn, args, rootPath) {
+    return doTest(true, shouldDoThisSuccessfully, stepFn, args, rootPath);
+};
+
+Driver.prototype.it = {
+    should: should,
+    shouldFail: shouldFail
+};
 
 module.exports = new Driver().it;

@@ -16,7 +16,7 @@
 
 import it from '../helpers/driver'
 
-it('should create, invoke, and delete an action, and then quit without error', (name) => [
+it.should('create, invoke, and delete an action, and then quit without error', (name) => [
     `create ${name} nodejs function main(params) { return { message: "Hello " + params.name } }`,
     `invoke ${name}`,
     `delete ${name}`
