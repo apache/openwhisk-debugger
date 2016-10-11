@@ -17,6 +17,7 @@
 var argv = require('argv'),
     prompt = require('inquirer'),
     lister = require('./commands/list'),
+    options = require('./options'),
     rewriter = require('./rewriter'),
     columnify = require('columnify');
 
@@ -116,10 +117,17 @@ var publish = {
     description: 'Publish pending changes to a given action',
     synchronous: true
 };
+var cli = {
+    handler: options.update.bind(undefined, 'use-cli-debugger', undefined),
+    description: 'Use the CLI debugger, when available',
+    synchronous: true
+};
 commandHandlers = {
     list: list,
     l: list,
-    
+
+    cli: cli,
+
     invoke: invoke,
     i: invoke,
 
