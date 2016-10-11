@@ -37,13 +37,13 @@ module.exports = function(key, namespace, triggerName, breakAtExit) {
 	    /* jshint ignore:end */
 	}
 
-	console.log('Returning ' + JSON.stringify(result, undefined, 4));
+	// console.log('Returning ' + JSON.stringify(result, undefined, 4));
 
 	ow.triggers.invoke({
 	    triggerName: triggerName,
 	    params: result
 	}).then(function() {
-	    console.log('Debug session complete');
+	    // console.log('Debug session complete');
 	});
     };
 };
