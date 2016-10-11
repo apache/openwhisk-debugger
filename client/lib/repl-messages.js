@@ -38,8 +38,13 @@ exports.okAfter = function okAfter(f, next) {
  */
 exports.errorWhile = function errorWhile(inOperation, callback) {
     return function(err) {
-	console.error('Error ' + inOperation);
-	console.error(err);
+	if (err.toString().indexOf('404')) {
+	    console.error('Error: entity does not exist');
+	} else {
+	    console.error('Error ' + inOperation);
+	    console.error(err);
+	}
+	
 	if (callback) {
 	    callback();
 	}
