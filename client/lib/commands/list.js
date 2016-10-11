@@ -15,6 +15,7 @@
  */
 
 var created = require('./create').created,
+    isDirectlyAttachedTo = require('../rewriter').isDirectlyAttachedTo,
     Namer = require('../namer'),
     ok = require('../repl-messages').ok,
     ok_ = require('../repl-messages').ok_,
@@ -42,7 +43,16 @@ exports.listToConsole = function listToConsole(wskprops, options, next) {
     function print(actions) {
 	actions
 	    .filter(action => options && options.full || !Namer.isDebugArtifact(action.name))
-	    .forEach(action => console.log('    ', action.name[created[action.name] ? 'green' : 'reset']));
+	    .forEach(action => {
+		var attached = isDirectlyAttachedTo(action.name);
+		var newly = created[action.name];
+		var tabbed = attached || newly;
+		
+		console.log('    ', action.name[attached ? 'red' : newly ? 'green' : 'reset']
+			    + (tabbed ? '\t\t\t\t\t' : '')
+			    + (attached ? 'attached'.red : '')
+			    + (newly ? 'new'.green : ''));
+	    });
 
 	ok_(next);
     }
