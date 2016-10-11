@@ -21,7 +21,8 @@ var fs = require('fs'),
     kill = require('tree-kill'),
     open = require('open'),
     path = require('path'),
-    spawn = require('child_process').spawn;
+    spawn = require('child_process').spawn,
+    options = require('./options').options;
 
 exports.debug = function debugNodeJS(message, ws, echoChamberNames, done, commandLineOptions, eventBus) {
     try {
@@ -33,11 +34,11 @@ exports.debug = function debugNodeJS(message, ws, echoChamberNames, done, comman
 exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, commandLineOptions, eventBus) {
     var code = message.action.exec.code;
 
-    var r = new RegExp(/main[\s]*\([^\)]*\)/);
+    var r = new RegExp(/function main[\s]*\([^\)]*\)/);
     var startOfMethodBody = code.search(r);
     if (startOfMethodBody >= 0) {
 	var paren = code.indexOf('{', startOfMethodBody);
-	code = code.substring(0, paren + 1) + '\n    // This is your main method\n    // Click continue, and you will stop here\n    debugger;\n' + code.substring(paren + 1);
+	code = code.substring(0, paren + 1) + '\n    // Welcome to your main method\n    debugger;\n' + code.substring(paren + 1);
     }
 
 /*    var bootstrap = '\n\n\nvar result = main.apply(undefined, ' + JSON.stringify([message.actualParameters || {}]) + ');';
@@ -47,13 +48,21 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
     bootstrap += 'ow = openwhisk({api: \'' + api.host + api.path + '\', api_key: \'' + message.key + '\', namespace: \'' + message.action.namespace + '\' });\n';
     bootstrap += 'ow.triggers.invoke({ triggerName: \'' + echoChamberNames.trigger + '\', params: result });\n';*/
 
-    code += '\n\n//\n';
-    code += '// Welcome to the OpenWhisk debugger.\n';
-    code += '//\n';
-    code += '// To proceed with debugging, press the continue => button.\n';
-    code += '// The first breakpoint will be in your main method\n';
-    code += '//\n';
-    code += '\n\nvar bootstrap = require(\'debug-bootstrap\')(\'' + message.key + '\', \'' + message.action.namespace + '\', \'' + echoChamberNames.trigger + '\');\nbootstrap(main, ' + JSON.stringify(message.actualParameters || {}) + ');';
+    if (commandLineOptions['use-cli-debugger']) {
+	// in CLI mode, try to save space with a terse message
+	code += '\n\nconsole.log(\'Debug session initiated.\');\n';
+	code += 'console.log(\'Enter the [cont] command to start your debugging session\');\n\n';
+    } else {
+	// in UI mode, we have more real estate for a longer message
+	code += '\n\n\n\n\n//\n';
+	code += '// Welcome to the OpenWhisk debugger.\n';
+	code += '//\n';
+	code += '// To proceed with debugging, press the continue => button.\n';
+	code += '// The first breakpoint will be in your main method\n';
+	code += '//\n\n';
+    }
+    
+    code += 'require(\'debug-bootstrap\')(\'' + message.key + '\', \'' + message.action.namespace + '\', \'' + echoChamberNames.trigger + '\')(main, ' + JSON.stringify(message.actualParameters || {}) + ');';
 
     //
     // since we've modified the code, we need to remember the diffs *we* are responsible for,
@@ -63,7 +72,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
     
     tmp.dir({ prefix: 'wskdb-', unsafeCleanup: true}, function onTempDirCreation(err, tmpDirPath, tmpdirCleanupCallback) {
 	// console.log('TMP ' + tmpdirPath);
-	var tmpFilePath = path.join(tmpDirPath, message.action.name + '.js');
+	var tmpFilePath = path.join(tmpDirPath, message.action.name + '.js-debug');
 
 	try {
 	    fs.writeFile(tmpFilePath, code, 0, 'utf8', function onFileWriteCompletion(err, written, string) {
@@ -85,6 +94,8 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 				   '--debug-port', debugPort,
 				   '--web-port', webPort,
 				   '--save-live-edit',
+				   '--no-preload',
+				   '--hidden', '\.js$',
 				   tmpFilePath],
 				  spawnOpts);
 		var child2;
@@ -98,12 +109,12 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			var url = 'http://127.0.0.1:' + webPort + '/?port=' + debugPort;
 			child2 = open(url, 'Google Chrome');
 
-			console.log('');
+			/*console.log('');
 			console.log('');
 			console.log('\tVisit ' + url.underline.blue + ' in the ' + 'Chrome'.red + ' browser that just popped up');
 			console.log('\tClose that browser tab to complete your debugging session'.bold);
 			console.log('');
-			console.log('');
+			console.log('');*/
 		    }
 		}), 500);
 
@@ -169,7 +180,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		try {
 		    var spawnOpts = {
 			cwd: process.cwd(),
-			stdio: ['inherit', 'inherit', 'inherit'],
+			stdio: ['inherit', 'inherit', 'pipe'],
 			env: env
 		    };
 		    var child = spawn('node',
@@ -180,12 +191,24 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		    // the activation that we are debugging has
 		    // finished. kill the child debugger process
 		    //
-		    eventBus.on('invocation-done', () => kill(pid));
+		    eventBus.on('invocation-done', () => kill(child.pid));
 
+		    var addrInUse = false;
+		    child.stderr.on('data', (message) => {
+			message = message.toString();
+			if (message.indexOf('EADDRINUSE') >= 0) {
+			    addrInUse = true;
+			    kill(child);
+			}
+		    });
+				    
 		    //
 		    // the child debugger process has terminated, clean things up
 		    //
 		    child.on('exit', (code) => {
+			if (addrInUse) {
+			    console.error('Port 5858 is in use, please clear this up, thanks'.red);
+			}
 			if (code !== 0) {
 			    console.error('The NodeJS debugger exited abnormally with code ' + code);
 			}
@@ -200,7 +223,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		}
 	    }
 
-	    if (commandLineOptions['use-cli-debugger']) {
+	    if (commandLineOptions['use-cli-debugger'] && options['use-cli-debugger'] !== false) {
 		spawnWithCLI();
 	    } else {
 		trySpawnWithBrowser(8080, 5858);
