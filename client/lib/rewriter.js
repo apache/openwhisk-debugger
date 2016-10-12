@@ -39,8 +39,9 @@ var uuid = require('uuid'),
     };
 
 /** the dictionary of live attachments to actions */
-var attached = {}, chainAttached = {};
+var attached = {}, chainAttached = {}, lastAttached = {};
 
+exports.lastAttached = lastAttached;
 exports.isDirectlyAttachedTo = function isDirectlyAttachedTo(name) {
     return attached[name];
 };
@@ -350,6 +351,7 @@ exports.attach = function attach(wskprops, options, next, entity) {
 	    UpstreamAdapter.create(ow, entity, entityNamespace).then(names => {
 		// remember the names, so that we can route invocations to the debug version
 		attached[entity] = names;
+		lastAttached = entity;
 
 		if (!options || !options.all) {
 		    //
@@ -513,6 +515,17 @@ exports._invoke = function invoke() {
     var namespace = wskprops.NAMESPACE;
     var next = args.shift();
     var action = args.shift();
+
+    if (!action || action === '-p') {
+	//
+	// user did not provide an action
+	//
+	if (action) {
+	    args.unshift(action);
+	}
+
+	action = lastAttached;
+    }
 
     var params = {};
     for (var i = 0; i < args.length; i++) {
