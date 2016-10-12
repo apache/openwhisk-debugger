@@ -146,14 +146,11 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		});
 
 		function cleanUpSubprocesses(err, stdout, stderr) {
-		    if (err) {
-			if (addrInUse) {
-			    trySpawnWithBrowser(webPort + 1, debugPort + 1);
-			} else {
-			    console.log('Error launching debugger', err);
-			}
-		    }
-		    if (!addrInUse) {
+		    if (addrInUse) {
+			return trySpawnWithBrowser(webPort + 1, debugPort + 1);
+		    } else if (err) {
+			console.log('Error launching debugger', err);
+		    } else {
 			diff.rememberIfChanged(message.action, tmpFilePath, tmpdirCleanupCallback, removeBootstrapPatch);
 
 			if (!child.__killedByWSKDBInvocationDone) {
