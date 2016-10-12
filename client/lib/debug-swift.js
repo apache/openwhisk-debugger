@@ -115,10 +115,16 @@ exports.debug = function debugSwift(message, ws, echoChamberNames, done, command
 exports._debug = function debugSwift(message, ws, echoChamberNames, done, commandLineOptions, eventBus) {
     var code = message.action.exec.code;
 
+    //
+    // we need to mark the parameters as "inout" so that they are modifiable in lldb
+    //
     var r2 = new RegExp(/\[[\s]*String[\s]*:[\s]*Any[\s]*\]/);
     var paramType = code.search(r2, startOfMethodBody);
     code = code.substring(0, paramType) + ' inout ' + code.substring(paramType);
-    
+
+    //
+    // let's add a little comment at the top of the method body to welcome the users
+    //
     var r = new RegExp(/func main[\s]*\([^\)]*\)/);
     var startOfMethodBody = code.search(r);
     if (startOfMethodBody >= 0) {
@@ -127,21 +133,30 @@ exports._debug = function debugSwift(message, ws, echoChamberNames, done, comman
     }
 
     fs.readFile(path.join('lib', 'debug-bootstrap.swift'), (err, codeBuffer) => {
-	code += '\n\n//\n';
-	code += '// Welcome to the OpenWhisk debugger.\n';
-	code += '//\n';
-	code += '// To proceed with debugging, press the continue => button.\n';
-	code += '// The first breakpoint will be in your main method\n';
-	code += '//\n';
+	//
+	// inline the bootstrapping logic into the file to be debugged
+	//
 	code += codeBuffer.toString('utf8');
+
+	//
+	// lastly, invoke the bootstrap method
+	//
 	code += '\nvar params: [String:Any] = ' + jsonToSwiftDictionary(message.actualParameters);
 	code += '\nbootstrap(key: "' + message.key + '", namespace: "' + message.action.namespace + '", triggerName: "' + echoChamberNames.trigger + '", main: main, actualParameters: &params);';
-    
+
+	//
+	// we will store the temporary files in a temporary directory
+	//
 	tmp.dir({ prefix: 'wskdb-', unsafeCleanup: true }, function onTempDirCreation(err, tmpDirPath, fd, tmpdirCleanupCallback) {
+	    //
+	    // this is the source file path that we'll use
+	    //
 	    var tmpFilePath = path.join(tmpDirPath, message.action.name + '.swift');
-	    console.log('TMP ' + tmpFilePath);
 
 	    try {
+		//
+		// write it out, compile it, then launch the debugger
+		//
 		fs.writeFile(tmpFilePath, code, 0, 'utf8', function onFileWriteCompletion(err, written, string) {
 
 		    compileIt(tmpFilePath, tmpDirPath, message.action.name)
