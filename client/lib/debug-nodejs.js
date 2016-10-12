@@ -101,8 +101,6 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		var child2;
 		var addrInUse = false;
 
-		console.log("SPAWN", webPort, debugPort);
-		
 		//
 		// a bit of a hack here: wait a bit to see if we get an EADDRINUSE on stderr
 		//
