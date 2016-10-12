@@ -22,10 +22,10 @@ import Foundation
     };*/
 
 func bootstrap(key: String, namespace: String, triggerName: String,
-	       main: ([String:Any]) -> [String:Any],
-	       actualParameters: [String:Any]) {
+	       main: (inout [String:Any]) -> [String:Any],
+	       actualParameters: inout [String:Any]) {
     
-    let result = main(actualParameters);
+    let result = main(&actualParameters);
 
     // print("Returning \(result)");
 

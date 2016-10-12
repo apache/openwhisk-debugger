@@ -21,37 +21,36 @@ var fs = require('fs'),
     path = require('path'),
     spawn = require('child_process').spawn;
 
-function compileIt(sourcePath) {
+function compileIt(sourcePath, tmpDirPath, actionName) {
     // console.log("COMPILEIT", sourcePath);
     return new Promise((resolve, reject) => {
-	tmp.file(function onTempFileCreation(err, executablePath, fd, executableCleanup) {
-	    var spawnOpts = {
-		cwd: process.cwd(),
-		stdio: ['inherit', 'inherit', 'inherit'],
-		env: process.env
-	    };
-	    try {
-		var child = spawn('swiftc',
-				  ['-o', executablePath,
-				   '-g',
-				   sourcePath],
-				  spawnOpts);
-		child.on('exit', (code) => {
-		    if (code !== 0) {
-			reject(code);
-		    } else {
-			resolve(executablePath, executableCleanup);
-		    }
-		});
-	    } catch (err) {
-		console.error(err);
-		reject(err);
-	    }
-	});
+	var spawnOpts = {
+	    cwd: tmpDirPath,
+	    stdio: ['inherit', 'inherit', 'inherit'],
+	    env: process.env
+	};
+	try {
+	    var executablePath = path.join(tmpDirPath, actionName);
+	    var child = spawn('swiftc',
+			      ['-o', executablePath,
+			       '-g',
+			       sourcePath],
+			      spawnOpts);
+	    child.on('exit', (code) => {
+		if (code !== 0) {
+		    reject(code);
+		} else {
+		    resolve(executablePath);
+		}
+	    });
+	} catch (err) {
+	    console.error(err);
+	    reject(err);
+	}
     });
 }
 
-function debugIt(eventBus, executablePath, executableCleanup) {
+function debugIt(eventBus, executablePath) {
     // console.log("DEBUGIT", executablePath);
     return new Promise((resolve, reject) => {
 	try {
@@ -116,7 +115,11 @@ exports.debug = function debugSwift(message, ws, echoChamberNames, done, command
 exports._debug = function debugSwift(message, ws, echoChamberNames, done, commandLineOptions, eventBus) {
     var code = message.action.exec.code;
 
-    var r = new RegExp(/main[\s]*\([^\)]*\)/);
+    var r2 = new RegExp(/\[[\s]*String[\s]*:[\s]*Any[\s]*\]/);
+    var paramType = code.search(r2, startOfMethodBody);
+    code = code.substring(0, paramType) + ' inout ' + code.substring(paramType);
+    
+    var r = new RegExp(/func main[\s]*\([^\)]*\)/);
     var startOfMethodBody = code.search(r);
     if (startOfMethodBody >= 0) {
 	var paren = code.indexOf('{', startOfMethodBody);
@@ -124,33 +127,36 @@ exports._debug = function debugSwift(message, ws, echoChamberNames, done, comman
     }
 
     fs.readFile(path.join('lib', 'debug-bootstrap.swift'), (err, codeBuffer) => {
-    code += '\n\n//\n';
-    code += '// Welcome to the OpenWhisk debugger.\n';
-    code += '//\n';
-    code += '// To proceed with debugging, press the continue => button.\n';
-    code += '// The first breakpoint will be in your main method\n';
-    code += '//\n';
+	code += '\n\n//\n';
+	code += '// Welcome to the OpenWhisk debugger.\n';
+	code += '//\n';
+	code += '// To proceed with debugging, press the continue => button.\n';
+	code += '// The first breakpoint will be in your main method\n';
+	code += '//\n';
 	code += codeBuffer.toString('utf8');
-	code += '\nbootstrap(key: "' + message.key + '", namespace: "' + message.action.namespace + '", triggerName: "' + echoChamberNames.trigger + '", main: main, actualParameters: ' + jsonToSwiftDictionary(message.actualParameters) + ');';
+	code += '\nvar params: [String:Any] = ' + jsonToSwiftDictionary(message.actualParameters);
+	code += '\nbootstrap(key: "' + message.key + '", namespace: "' + message.action.namespace + '", triggerName: "' + echoChamberNames.trigger + '", main: main, actualParameters: &params);';
     
-    tmp.file({ postfix: '.swift' }, function onTempFileCreation(err, tmpFilePath, fd, tmpfileCleanupCallback) {
-	// console.log('TMP ' + tmpFilePath);
-	try {
-	    fs.write(fd, code, 0, 'utf8', function onFileWriteCompletion(err, written, string) {
+	tmp.dir({ prefix: 'wskdb-', unsafeCleanup: true }, function onTempDirCreation(err, tmpDirPath, fd, tmpdirCleanupCallback) {
+	    var tmpFilePath = path.join(tmpDirPath, message.action.name + '.swift');
+	    console.log('TMP ' + tmpFilePath);
 
-		compileIt(tmpFilePath)
-		    .then(debugIt.bind(undefined, eventBus))
-		    .then(() => {
-			try { tmpfileCleanupCallback(); } catch (e) { }
-			done(); // we don't need to "ok" here, as the invoker will do that for us
-		    });
-	    });
-	} catch (err) {
-	    console.error(err);
-	    console.error(err.stack);
-	    try { tmpfileCleanupCallback(); } catch (e) { }
-	    done();
-	}
-    });
+	    try {
+		fs.writeFile(tmpFilePath, code, 0, 'utf8', function onFileWriteCompletion(err, written, string) {
+
+		    compileIt(tmpFilePath, tmpDirPath, message.action.name)
+			.then(debugIt.bind(undefined, eventBus))
+			.then(() => {
+			    try { tmpdirCleanupCallback(); } catch (e) { }
+			    done(); // we don't need to "ok" here, as the invoker will do that for us
+			});
+		});
+	    } catch (err) {
+		console.error(err);
+		console.error(err.stack);
+		try { tmpdirCleanupCallback(); } catch (e) { }
+		done();
+	    }
+	});
     });
 };
