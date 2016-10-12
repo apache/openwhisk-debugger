@@ -340,13 +340,13 @@ exports.attach = function attach(wskprops, options, next, entity) {
 	return next();
     }
 
-    console.log('Attaching'.blue + ' to ' + entity);
-
     try {
 	var entityNamespace = wskprops.NAMESPACE;
 	var ow = setupOpenWhisk(wskprops);
 
 	var doAttach = function doAttach() {
+	    console.log('Attaching'.blue + ' to ' + entity);
+
 	    console.log('   Creating action trampoline'.green);
 	    UpstreamAdapter.create(ow, entity, entityNamespace).then(names => {
 		// remember the names, so that we can route invocations to the debug version
@@ -387,6 +387,9 @@ exports.attach = function attach(wskprops, options, next, entity) {
 	    });
 	}; /* end of doAttach */
 	
+	//
+	// first fetch the action to make sure it exists (at least for now)
+	//
 	ow.actions.get({ actionName: entity })
 	    .then(doAttach)
 	    .catch(errorWhile('looking up action', next));
