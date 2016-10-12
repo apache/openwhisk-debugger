@@ -19,7 +19,7 @@ var spawn = require('child_process').spawn
 
 it('should launch and quit without error', t => {
     return new Promise((resolve,reject) => {
-	var child = spawn('node', ['wskdb.js'], { cwd: '..' })
+	var child = spawn('node', ['wskdb.js'], { cwd: '../..' })
 	child.stdin.write('q\n');
 	
 	child.stderr.on('data', (data) => {
