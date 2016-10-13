@@ -16,7 +16,7 @@
 
 import it from '../helpers/driver'
 
-it.should('create an action, then attach, invoke, detach, delete, and finally quit without error', (name) => [
+it.should('create a swift action, then attach, invoke, detach, delete, and finally quit without error', (name) => [
     `create ${name} swift func main(args: [String:Any]) -> [String:Any] {    if let name = args["name"] as? String {        return [ "greeting" : "Hello \\\(name)!" ]    } else {        return [ "greeting" : "Hello stranger!" ]    } }`,
     `attach ${name} -a`,
     `invoke ${name}`,
