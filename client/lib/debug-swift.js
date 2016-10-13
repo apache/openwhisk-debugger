@@ -31,8 +31,9 @@ function compileIt(sourcePath, tmpDirPath, actionName) {
 	};
 	try {
 	    var executablePath = path.join(tmpDirPath, actionName);
-	    var child = spawn('swiftc',
-			      ['-o', executablePath,
+	    var child = spawn('xcrun',
+			      ['--sdk', 'macosx', 'swiftc',
+			       '-o', executablePath,
 			       '-g',
 			       sourcePath],
 			      spawnOpts);
@@ -119,7 +120,7 @@ exports._debug = function debugSwift(message, ws, echoChamberNames, done, comman
     // we need to mark the parameters as "inout" so that they are modifiable in lldb
     //
     var r2 = new RegExp(/\[[\s]*String[\s]*:[\s]*Any[\s]*\]/);
-    var paramType = code.search(r2, startOfMethodBody);
+    var paramType = code.search(r2);
     code = code.substring(0, paramType) + ' inout ' + code.substring(paramType);
 
     //
