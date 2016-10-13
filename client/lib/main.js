@@ -23,6 +23,7 @@ var argv = require('argv'),
     WebSocket = require('ws'),
     debugNodeJS = require('./debug-nodejs').debug,
     debugSwift = require('./debug-swift').debug,
+    debugPython = require('./debug-python').debug,
     expandHomeDir = require('expand-home-dir'),
     propertiesParser = require('properties-parser'),
 
@@ -75,6 +76,7 @@ ws.on('open', function open() {
 		type: 'keep-alive'
 	    }));
 	} catch (e) {
+	    console.error();
 	    console.error('It looks like your network went offline. Please restart wskdb when your network is live.');
 	    process.exit(1);
 	}
@@ -113,7 +115,7 @@ ws.on('open', function open() {
 });
 
 ws.on('close', function() {
-    console.log('Remote connection closed');
+    //console.log('Remote connection closed');
 });
  
 ws.on('message', function(data, flags) {
@@ -160,6 +162,8 @@ ws.on('message', function(data, flags) {
 			debugHandler = debugNodeJS;
 		    } else if (kind.indexOf('swift') >= 0) {
 			debugHandler = debugSwift;
+		    } else if (kind.indexOf('python') >= 0) {
+			debugHandler = debugPython;
 		    }
 
 		    if (debugHandler) {

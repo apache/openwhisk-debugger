@@ -90,6 +90,7 @@ function doTest(expectFailure, shouldDoThisSuccessfully, stepFn, args, rootPath)
 		} else if (data.indexOf('ok') == 0
 			   || data.indexOf('\nok\n') >= 0
 			   || data.indexOf('break in') >= 0
+			   || data.indexOf('(Pdb)') >= 0
 			   || data.indexOf('stopped') >= 0) {
 		    goody = true;
 			

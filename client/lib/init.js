@@ -55,15 +55,21 @@ exports.init = function init() {
 		if (err) {
 		    return reject(err);
 		}
-		
-		touch();
-		clearInterval(dots);
 
-		console.log();
-		console.log('>>> Great! The one-time initialization has completed.');
-		console.log();
+		exec('pip install -r deps/python/requirements.txt', { cwd: process.cwd() }, (err) => {
+		    if (err) {
+			return reject(err);
+		    }
 
-		resolve();
+		    touch();
+		    clearInterval(dots);
+
+		    console.log();
+		    console.log('>>> Great! The one-time initialization has completed.');
+		    console.log();
+
+		    resolve();
+		});
 	    });
 	});
     });
