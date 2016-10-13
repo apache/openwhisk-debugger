@@ -211,6 +211,8 @@ function repl(wskprops, eventBus, attachTo) {
 	// the first parameter is wskprops
 	commandLine.unshift(wskprops);
 
+	commandLine.push(response.command);
+
 	// call to the handler!
 	try {
 	    handler.handler.apply(undefined, commandLine);

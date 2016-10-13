@@ -31,7 +31,7 @@ exports.create = function create() {
     var next = arguments[1];
     var name = arguments[2];
     var kind = arguments[3];
-    var code = arguments.length > 4 && Array.from(arguments).slice(4).join(' ');
+    var code;
 
     var questions = [];
     if (!name) {
@@ -43,7 +43,10 @@ exports.create = function create() {
 			 choices: ['nodejs', 'swift', 'python' ]
 		       });
     }
-    if (!code) {
+    if (arguments.length < 5) {
+	//
+	// prompt the user for the code
+	//
 	questions.push({ name: 'code', type: 'editor',
 			 message: 'Please provide the function body for your new action',
 			 default: function(response) {
@@ -59,6 +62,10 @@ exports.create = function create() {
 			     }
 			 }
 		       });
+    } else {
+	code = arguments[arguments.length -1];
+	code = code.substring(code.lastIndexOf(kind) + kind.length).trim();
+	code = code.replace(/\\n/g, '\n');
     }
 
     inquirer
