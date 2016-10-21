@@ -519,7 +519,7 @@ exports._invoke = function invoke() {
     var next = args.shift();
     var action = args.shift();
 
-    if (!action || action === '-p') {
+    if (!action || action === '-p' || action == 'invoke') {
 	//
 	// user did not provide an action
 	//
