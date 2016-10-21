@@ -44,7 +44,7 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
 	    // scan the recent activations, looking for the
 	    // anticipated activation by invoked-entity name
 	    //
-	    ow.activations.list({ limit: 20 }).then(list => {
+	    ow.activations.list({ limit: 20, since: options.since }).then(list => {
 		var allDone = false;
 		for (var i = 0; i < list.length; i++) {
 		    var activation = list[i];

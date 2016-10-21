@@ -578,8 +578,14 @@ exports._invoke = function invoke() {
 
     var ow = setupOpenWhisk(wskprops);
 
+    //
+    // remember the time, so that the waitForActivationCompletion
+    // doesn't look for previous invocations of the given action
+    //
+    var now = Date.now();
+    
     ow.actions.invoke({ actionName: invokeThisAction, params: params })
-	.then(waitForActivationCompletion.bind(undefined, wskprops, eventBus, waitForThisAction, { result: true }))
+	.then(waitForActivationCompletion(wskprops, eventBus, waitForThisAction, { result: true, since: now }))
 	.then(ok(next))
 	.catch(errorWhile('invoking your specified action', next));
 };
