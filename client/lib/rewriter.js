@@ -388,9 +388,11 @@ exports.attach = function attach(wskprops, options, next, entity) {
 			    console.log('   Creating rule clone'.green, otherEntityWithDetails.name);
 			    RuleRewriter.rewrite(ow, otherEntityWithDetails, entity, entityNamespace, names)
 				.then(countDown, errorWhile('creating rule clone', countDown));
+			} else {
+			    countDown();
 			}
 		    }).then(ok(next)).catch(next);
-		});
+		}).catch(next);
 	    });
 	}; /* end of doAttach */
 	
@@ -526,7 +528,7 @@ exports._invoke = function invoke() {
     var next = args.shift();
     var action = args.shift();
 
-    if (!action || action === '-p' || action == 'invoke') {
+    if (!action || action === '-p' || action === 'invoke') {
 	//
 	// user did not provide an action
 	//
