@@ -18,7 +18,7 @@
     "inquirer": "git://github.com/starpit/Inquirer.js.git",
     "node-inspector": "git://github.com/kerryspchang/node-inspector.git",
     "open": "0.0.5",
-    "openwhisk": "^2.1.3",
+    "openwhisk": "git://github.com/openwhisk/openwhisk-client-js",
     "properties-parser": "^0.3.1",
     "request": "^2.75.0",
     "tmp": "0.0.29",
