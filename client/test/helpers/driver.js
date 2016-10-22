@@ -63,7 +63,7 @@ function doTest(expectFailure, shouldDoThisSuccessfully, stepFn, args, rootPath)
 		    resolve();
 		    return true;
 		} else {
-		    reject('Step ' + (stepNumber - 1) + ' failed');
+		    reject('Step ' + (stepNumber - 1) + ' failed: ' + steps[stepNumber - 1]);
 		    return false;
 		}
 	    }
