@@ -44,37 +44,28 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
 	    // scan the recent activations, looking for the
 	    // anticipated activation by invoked-entity name
 	    //
-	    ow.activations.list({ limit: 20, since: options.since }).then(list => {
+	    ow.activations.list({ limit: 5, name: waitForThisAction, since: options.since, docs: true }).then(list => {
 		var allDone = false;
 		for (var i = 0; i < list.length; i++) {
-		    var activation = list[i];
-		    if (activation.name === waitForThisAction) {
+		    var activationDetails = list[i];
 
-			//
-			// great! we found the anticipated activation
-			//
-			ow.activations.get({ activation: activation.activationId })
-			    .then(activationDetails => {
-
-				if (options && options.result) {
-				    activationDetails = activationDetails.response.result;
-				}
-				
-				// print out the activation record
-				console.log(JSON.stringify(activationDetails, undefined, 4));
-
-				// let other async listeners know about it
-				eventBus.emit('invocation-done', activationDetails);
-
-				// and let the promise know about it
-				resolve(activationDetails);
-
-			    }).catch(errorWhile('fetching activation details', reject));
-			
-			allDone = true;
-			break;
+		    if (options && options.result) {
+			activationDetails = activationDetails.response.result;
 		    }
+				
+		    // print out the activation record
+		    console.log(JSON.stringify(activationDetails, undefined, 4));
+
+		    // let other async listeners know about it
+		    eventBus.emit('invocation-done', activationDetails);
+
+		    // and let the promise know about it
+		    resolve(activationDetails);
+
+		    allDone = true;
+		    break;
 		}
+		
 		if (!allDone) {
 		    //
 		    // not yet, try again in a little bit
