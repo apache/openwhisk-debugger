@@ -594,7 +594,7 @@ exports._invoke = function invoke() {
     var now = Date.now();
     
     ow.actions.invoke({ actionName: invokeThisAction, params: params })
-	.then(waitForActivationCompletion(wskprops, eventBus, waitForThisAction, { result: true, since: now }))
-	.then(ok(next))
+	.then(waitForActivationCompletion(wskprops, eventBus, waitForThisAction, { result: true, since: now })
+	      .then(ok(next)))
 	.catch(errorWhile('invoking your specified action', next));
 };
