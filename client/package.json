@@ -16,7 +16,7 @@
     "diff": "^3.0.1",
     "expand-home-dir": "0.0.3",
     "inquirer": "git://github.com/starpit/Inquirer.js.git",
-    "node-inspector": "^0.12.8",
+    "node-inspector": "git://github.com/kerryspchang/node-inspector.git",
     "open": "0.0.5",
     "openwhisk": "^2.1.3",
     "properties-parser": "^0.3.1",
