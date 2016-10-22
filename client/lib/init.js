@@ -48,16 +48,19 @@ exports.init = function init() {
     
 	exec('npm install --production', { cwd: process.cwd() /*, stdio: 'inherit'*/ }, (err) => {
 	    if (err) {
+		clearInterval(dots);
 		return reject(err);
 	    }
 	    
 	    exec('npm install --production', { cwd: nodejs6_deps/*, stdio: 'inherit'*/ }, (err) => {
 		if (err) {
+		    clearInterval(dots);
 		    return reject(err);
 		}
 
 		/*exec('pip install -r deps/python/requirements.txt', { cwd: process.cwd() }, (err) => {
 		    if (err) {
+		    clearInterval(dots);
 			return reject(err);
 		    }*/
 
