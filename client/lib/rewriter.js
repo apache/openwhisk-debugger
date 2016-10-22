@@ -218,11 +218,12 @@ var RuleRewriter = {
      * Does the given rule entity use the given action entity located in the given entityNamespace?
      *
      */
-    rewriteNeeded: function ruleUses(ruleEntityThatMaybeUses, entity, entityNamespace) {
+    rewriteNeeded: function ruleUses(ruleEntityThatMaybeUses, entity, entityNamespace, isInSequence) {
 	//var fqn = '/' + entityNamespace + '/' + entity;
 
 	return ruleEntityThatMaybeUses.name !== entity
-	    && ruleEntityThatMaybeUses.action === entity;
+	    && (ruleEntityThatMaybeUses.action === entity
+		|| isInSequence[ruleEntityThatMaybeUses.action]);
     },
 
     rewrite: function cloneRule(ow, ruleEntityWithDetails, entity, entityNamespace, names) {
@@ -297,32 +298,34 @@ function spliceSequence(ow, sequence, entity, entityNamespace, names) {
     }
 }
 
-function doPar(ow, type, entity, next, each) {
-    var types = type + 's';
-    ow[types].list({ limit: 200 })
-	.then(entities => {
-	    var counter = entities.length;
-	    function countDown(names) {
-		if (--counter <= 0) {
-		    ok_(next);
+function doPar(ow, type, entity, each) {
+    return new Promise((resolve, reject) => {
+	var types = type + 's';
+	ow[types].list({ limit: 200 })
+	    .then(entities => {
+		var counter = entities.length;
+		function countDown(names) {
+		    if (--counter <= 0) {
+			resolve();
+		    }
 		}
-	    }
-	    entities.forEach(otherEntity => {
-		if (otherEntity.name === entity) {
-		    // this is the entity itself. skip, because
-		    // we're looking for uses in *other* entities
-		    countDown();
+		entities.forEach(otherEntity => {
+		    if (otherEntity.name === entity) {
+			// this is the entity itself. skip, because
+			// we're looking for uses in *other* entities
+			countDown();
 
-		} else {
-		    var opts = { namespace: otherEntity.namespace };
-		    opts[type + 'Name'] = otherEntity.name;
-		    ow[types].get(opts)
-			.then(otherEntityWithDetails => each(otherEntityWithDetails, countDown))
-			.catch(errorWhile('processing one ' + type, countDown));
-		}
-	    });
-	})
-	.catch(errorWhile('processing ' + types, next));
+		    } else {
+			var opts = { namespace: otherEntity.namespace };
+			opts[type + 'Name'] = otherEntity.name;
+			ow[types].get(opts)
+			    .then(otherEntityWithDetails => each(otherEntityWithDetails, countDown))
+			    .catch(errorWhile('processing one ' + type, countDown));
+		    }
+		});
+	    })
+	    .catch(errorWhile('processing ' + types, reject));
+    });
 }
 
 /**
@@ -359,12 +362,16 @@ exports.attach = function attach(wskprops, options, next, entity) {
 		    //
 		    return ok_(next);
 		}
-		doPar(ow, 'action', entity, next, (otherEntityWithDetails, countDown) => {
+
+		// remember all sequences that include action, so that we can properly handle rules T -> sequence(..., action, ...)
+		var isInSequence = {};
+		doPar(ow, 'action', entity, (otherEntityWithDetails, countDown) => {
 		    if (SequenceRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
 			//
 			// splice the sequence!
 			//
 			console.log('   Creating sequence splice'.green, otherEntityWithDetails.name);
+			isInSequence[otherEntityWithDetails.name] = true;
 			spliceSequence(ow, otherEntityWithDetails, entity, entityNamespace, names)
 			    .then(countDown)
 			    .catch(errorWhile('creating sequence splice', countDown));
@@ -372,17 +379,17 @@ exports.attach = function attach(wskprops, options, next, entity) {
 		    } else {
 			countDown();
 		    }
-		});
-
-		doPar(ow, 'rule', entity, next, (otherEntityWithDetails, countDown) => {
-		    if (RuleRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
-			//
-			// clone the rule!
-			//
-			console.log('   Creating rule clone'.green, otherEntityWithDetails.name);
-			RuleRewriter.rewrite(ow, otherEntityWithDetails, entity, entityNamespace, names)
-			    .then(countDown, errorWhile('creating rule clone', countDown));
-		    }
+		}).then(() => {
+		    doPar(ow, 'rule', entity, (otherEntityWithDetails, countDown) => {
+			if (RuleRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace, isInSequence)) {
+			    //
+			    // clone the rule!
+			    //
+			    console.log('   Creating rule clone'.green, otherEntityWithDetails.name);
+			    RuleRewriter.rewrite(ow, otherEntityWithDetails, entity, entityNamespace, names)
+				.then(countDown, errorWhile('creating rule clone', countDown));
+			}
+		    }).then(ok(next)).catch(next);
 		});
 	    });
 	}; /* end of doAttach */
