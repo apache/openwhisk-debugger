@@ -40,6 +40,10 @@ exports.main = function() {
 
 var commandLineOptionsConfig = [
     {name: 'use-cli-debugger', short: 'c', type: 'string', description: 'Favor the CLI for debug sessions over a GUI'},
+    {name: 'python', short: 'p', type: 'string', description: 'Include python support'},
+    {name: 'dev', short: 'd', type: 'string', description: 'Set up wskdb as a developer'},
+    {name: 'reset', short: 'r', type: 'string', description: 'Reset wskdb, so that the dependencies are reinstalled'},
+    {name: 'verbose', type: 'string', description: 'Log activity more verbosely'},
     {name: 'no-color', type: 'string', description: 'Avoid using console colors'} // this comes from the colors module
 ];
 argv.info('Usage: wskdb [attachTo] [options...]'.red + '\n\nWhere each option is one of the following:');

@@ -15,7 +15,7 @@
  */
 
 var fs = require('fs'),
-    exec = require('child_process').exec,
+    exec = require('child_process').spawn,
     path = require('path'),
     MARKER = '.initDone',
     nodejs6_deps = path.join('deps', 'nodejs6');
@@ -25,7 +25,8 @@ function touch() {
 }
 function initDone() {
     try {
-	return fs.statSync(MARKER).isFile()
+	return !process.argv.find(s => s === '--reset' || s === '-r')
+	    && fs.statSync(MARKER).isFile()
 	    && fs.statSync('node_modules').isDirectory()
 	    && fs.statSync(nodejs6_deps).isDirectory();
     } catch (e) {
@@ -34,46 +35,103 @@ function initDone() {
 }
 
 exports.init = function init() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => { try {
 	if (initDone()) {
 	    return resolve();
 	}
 
 	console.log('>>> Please be patient while we finish up the installation of the OpenWhisk Debugger.');
-	console.log('>>> This may take 60-90 seconds');
+	console.log('>>> This may take around 30-60 seconds');
 
+	var dot = '.';
 	var dots = setInterval(function() {
-	    process.stdout.write('.');
+	    process.stdout.write(dot);
 	}, 1000);
-    
-	exec('npm install --production', { cwd: process.cwd() /*, stdio: 'inherit'*/ }, (err) => {
-	    if (err) {
-		clearInterval(dots);
-		return reject(err);
+
+	var allDone = function() {
+	    touch();
+	    clearInterval(dots);
+
+	    console.log();
+	    console.log('>>> Great! The one-time initialization has completed.');
+	    console.log();
+
+	    resolve();
+	};
+	var errDone = function(err) {
+	    console.error(err.stack);
+	    clearInterval(dots);
+	    reject(err);
+	};
+
+	var verbose = process.argv.find(s => s === '--verbose');
+	var stdio = ['pipe', verbose ? 'inherit' : 'pipe', 'pipe' ];
+	if (verbose) {
+	    dot = '';
+	}
+	
+	//
+	// first, we install the npm modules needed by wskdb
+	//
+	try {
+	    var args = ['install'];
+	    if (!process.argv.find(s => s === '--dev' || s === 'd')) {
+		//
+		// install dev dependencies
+		//
+		args.push('--production');
 	    }
-	    
-	    exec('npm install --production', { cwd: nodejs6_deps/*, stdio: 'inherit'*/ }, (err) => {
-		if (err) {
-		    clearInterval(dots);
-		    return reject(err);
-		}
-
-		/*exec('pip install -r deps/python/requirements.txt', { cwd: process.cwd() }, (err) => {
+	    exec('npm', args, { cwd: process.cwd() , stdio: stdio }).on('exit', (err) => {
+		try {
 		    if (err) {
-		    clearInterval(dots);
-			return reject(err);
-		    }*/
+			return errDone(err);
+		    }
+	    
+		    //
+		    // here, we install the prerequisities dictated by OpenWhisk nodejs actions
+		    //
+		    if (!verbose) {
+			dot = 'n';
+		    }
+		    exec('npm', ['install', '--production'], { cwd: nodejs6_deps, stdio: stdio }).on('exit', (err) => {
+			try {
+			    if (err) {
+				return errDone(err);
+			    }
 
-		    touch();
-		    clearInterval(dots);
+			    if (process.argv.find(s => s === '--python' || s === '-p')) {
+				//
+				// here, we install the prerequisities dictated by OpenWhisk python actions
+				//
+				if (!verbose) {
+				    dot = 'p';
+				}
+				exec('pip', ['install', '-r', 'deps/python/requirements.txt'], { cwd: process.cwd(), stdio: stdio }).on('exit', (err) => {
+				    if (err) {
+					return errDone(err);
+				    }
 
-		    console.log();
-		    console.log('>>> Great! The one-time initialization has completed.');
-		    console.log();
-
-		    resolve();
-//		});
+				    allDone();
+				});
+			    } else {
+				//
+				// user doesn't want python support
+				//
+				allDone();
+			    }
+			} catch (err) {
+			    return errDone(err);
+			}
+		    });
+		} catch (err) {
+		    return errDone(err);
+		}
 	    });
-	});
+	} catch (err) {
+	    return errDone(err);
+	}
+    } catch (err) {
+	console.error(err.stack);
+    }
     });
 };
