@@ -46,20 +46,20 @@ exports.init = function init() {
 	    process.stdout.write('.');
 	}, 1000);
     
-	exec('npm install', { cwd: process.cwd() /*, stdio: 'inherit'*/ }, (err) => {
+	exec('npm install --production', { cwd: process.cwd() /*, stdio: 'inherit'*/ }, (err) => {
 	    if (err) {
 		return reject(err);
 	    }
 	    
-	    exec('npm install', { cwd: nodejs6_deps/*, stdio: 'inherit'*/ }, (err) => {
+	    exec('npm install --production', { cwd: nodejs6_deps/*, stdio: 'inherit'*/ }, (err) => {
 		if (err) {
 		    return reject(err);
 		}
 
-		exec('pip install -r deps/python/requirements.txt', { cwd: process.cwd() }, (err) => {
+		/*exec('pip install -r deps/python/requirements.txt', { cwd: process.cwd() }, (err) => {
 		    if (err) {
 			return reject(err);
-		    }
+		    }*/
 
 		    touch();
 		    clearInterval(dots);
@@ -69,7 +69,7 @@ exports.init = function init() {
 		    console.log();
 
 		    resolve();
-		});
+//		});
 	    });
 	});
     });
