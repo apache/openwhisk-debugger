@@ -50,12 +50,12 @@ exports.inspect = function inspect(wskprops, next, name, property) {
 		    //
 		    // normal action
 		    //
-		    if (property !== 'inspect' && property != 'get' && property.indexOf('inspect ') < 0 && property.indexOf('get ') < 0) {
+		    if (property !== 'inspect' && property !== 'get' && property.indexOf('inspect ') < 0 && property.indexOf('get ') < 0) {
 			console.log(details.exec[property] || details[property]);
 		    } else {
 			console.log(`This is a ${details.exec.kind.blue} action`);
 			if (details.exec.code && !details.exec.binary) {
-			    console.log('\t' + details.exec.code.replace(/\n/g, "\n\t").green);
+			    console.log('\t' + details.exec.code.replace(/\n/g, '\n\t').green);
 			} else if (details.exec.image) {
 			    console.log('\t' + details.exec.image.green);
 			}
