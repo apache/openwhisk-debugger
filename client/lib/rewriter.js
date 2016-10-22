@@ -218,20 +218,37 @@ var RuleRewriter = {
      * Does the given rule entity use the given action entity located in the given entityNamespace?
      *
      */
-    rewriteNeeded: function ruleUses(ruleEntityThatMaybeUses, entity, entityNamespace, isInSequence) {
+    rewriteNeeded: function ruleUses(ruleEntityThatMaybeUses, entity, entityNamespace, isAnInstrumentedSequence) {
 	//var fqn = '/' + entityNamespace + '/' + entity;
 
 	return ruleEntityThatMaybeUses.name !== entity
 	    && (ruleEntityThatMaybeUses.action === entity
-		|| isInSequence[ruleEntityThatMaybeUses.action]);
+		|| isAnInstrumentedSequence[ruleEntityThatMaybeUses.action]);
     },
 
     rewrite: function cloneRule(ow, ruleEntityWithDetails, entity, entityNamespace, names) {
-	return ow.rules.create({ ruleName: Namer.name('rule-clone'),
-				 trigger: ruleEntityWithDetails.trigger,
-				 action: names.debugStubName
-			       })
-	    .then(newRule => chainAttached[ruleEntityWithDetails.name] = names);
+	if (ruleEntityWithDetails.action === entity) {
+	    //
+	    // then the rule is T => entity, so we can simply create a new rule T => debugStub
+	    //
+	    return ow.rules.create({ ruleName: Namer.name('rule-clone'),
+				     trigger: ruleEntityWithDetails.trigger,
+				     action: names.debugStubName
+				   })
+		.then(newRule => chainAttached[ruleEntityWithDetails.name] = names);
+	} else {
+	    var details = chainAttached[ruleEntityWithDetails.action];
+	    if (details) {
+		//
+		// this means the rule maps T => sequence, where the sequence directly contains entity [..., entity, ... ]
+		//
+		return ow.rules.create({ ruleName: Namer.name('rule-clone'),
+					 trigger: ruleEntityWithDetails.trigger,
+					 action: details.before
+				       })
+		    .then(newRule => chainAttached[ruleEntityWithDetails.name] = names);
+	    }
+	}
     }
 };
 
@@ -258,41 +275,43 @@ function spliceSequence(ow, sequence, entity, entityNamespace, names) {
 	    action: echoContinuation(entity, entityNamespace, spliceNames.onDone_trigger)
 	};*/
 	
-    var fqn = '/' + entityNamespace + '/' + entity;
+	var fqn = '/' + entityNamespace + '/' + entity;
 
-    var afterSpliceContinuation = Namer.name('sequence-splice-after');
-    var upstreamAdapterNames = UpstreamAdapter.createNames(afterSpliceContinuation);
+	var afterSpliceContinuation = Namer.name('sequence-splice-after', `for-${sequence.name}`);
+	var upstreamAdapterNames = UpstreamAdapter.createNames(afterSpliceContinuation);
 
 	var beforeSpliceUpstream = UpstreamAdapter.invokerFQN(entityNamespace, upstreamAdapterNames);
-    //var afterSpliceContinuation = '/' + entityNamespace + '/' + upstreamAdapterNames.continuationName;
+	//var afterSpliceContinuation = '/' + entityNamespace + '/' + upstreamAdapterNames.continuationName;
 
-    return Promise.all([
-	makeSequenceSplicePart(ow,
-			       Namer.name('sequence-splice-before'),
-			       sequence,
-			       beforeSpliceSplitter.bind(undefined, fqn, beforeSpliceUpstream)),   // before: _/--upstream
-	makeSequenceSplicePart(ow,
-			       afterSpliceContinuation,
-			       sequence,
-			       afterSpliceSplitter.bind(undefined, fqn, finalBit)) // after: -\__continuation
+	return Promise.all([
+	    makeSequenceSplicePart(ow,
+				   Namer.name('sequence-splice-before'),
+				   sequence,
+				   beforeSpliceSplitter.bind(undefined, fqn, beforeSpliceUpstream)),   // before: _/--upstream
+	    makeSequenceSplicePart(ow,
+				   afterSpliceContinuation,
+				   sequence,
+				   afterSpliceSplitter.bind(undefined, fqn, finalBit)) // after: -\__continuation
 
-    ]).then(beforeAndAfter => { // a destructuring bind would clean this up
-	// after the breakpoint, continue with the afterSplice
-	return UpstreamAdapter.create(ow, entity, entityNamespace, upstreamAdapterNames)
-	    .then(() => {
-		//
-		// this sequence splice uses its own downstream trigger, not the generic one from the action splice
-		//
-		var names = {
-		    before: beforeAndAfter[0].name,
-		    after: beforeAndAfter[1].name,
-		    triggerName: upstreamAdapterNames.triggerName
-		};
-		chainAttached[sequence.name] = names;
-		return names;
+	]).then(beforeAndAfter => {
+	    //
+	    // after the breakpoint, continue with the afterSplice
+	    //
+	    return UpstreamAdapter.create(ow, entity, entityNamespace, upstreamAdapterNames)
+		.then(() => {
+		    //
+		    // this sequence splice uses its own downstream trigger, not the generic one from the action splice
+		    //
+		    var names = {
+			before: beforeAndAfter[0].name,
+			after: beforeAndAfter[1].name,
+			triggerName: upstreamAdapterNames.triggerName
+		    };
+		    chainAttached[sequence.name] = names;
+		    return names;
 
-	    }, errorWhile('creating upstream adapter'));
-    }, errorWhile('splicing sequence'));
+		}, errorWhile('creating upstream adapter'));
+	}, errorWhile('splicing sequence'));
     } catch (e) {
 	console.error(e);
     }
@@ -364,14 +383,14 @@ exports.attach = function attach(wskprops, options, next, entity) {
 		}
 
 		// remember all sequences that include action, so that we can properly handle rules T -> sequence(..., action, ...)
-		var isInSequence = {};
+		var isAnInstrumentedSequence = {};
 		doPar(ow, 'action', entity, (otherEntityWithDetails, countDown) => {
 		    if (SequenceRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace)) {
 			//
 			// splice the sequence!
 			//
 			console.log('   Creating sequence splice'.green, otherEntityWithDetails.name);
-			isInSequence[otherEntityWithDetails.name] = true;
+			isAnInstrumentedSequence[otherEntityWithDetails.name] = true;
 			spliceSequence(ow, otherEntityWithDetails, entity, entityNamespace, names)
 			    .then(countDown)
 			    .catch(errorWhile('creating sequence splice', countDown));
@@ -381,7 +400,7 @@ exports.attach = function attach(wskprops, options, next, entity) {
 		    }
 		}).then(() => {
 		    doPar(ow, 'rule', entity, (otherEntityWithDetails, countDown) => {
-			if (RuleRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace, isInSequence)) {
+			if (RuleRewriter.rewriteNeeded(otherEntityWithDetails, entity, entityNamespace, isAnInstrumentedSequence)) {
 			    //
 			    // clone the rule!
 			    //
@@ -594,7 +613,7 @@ exports._invoke = function invoke() {
     var now = Date.now();
     
     ow.actions.invoke({ actionName: invokeThisAction, params: params })
-	.then(waitForActivationCompletion(wskprops, eventBus, waitForThisAction, { result: true, since: now })
+	.then(() => waitForActivationCompletion(wskprops, eventBus, waitForThisAction, { result: true, since: now })
 	      .then(ok(next)))
 	.catch(errorWhile('invoking your specified action', next));
 };

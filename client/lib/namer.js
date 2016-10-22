@@ -22,8 +22,8 @@ var uuid = require('uuid');
  */
 exports.prefix = '___debug___';
 
-exports.name = function name(extra) {
-    return exports.prefix + (extra ? extra + '-' : '') + uuid.v4();
+exports.name = function name(extra, suffix) {
+    return exports.prefix + (extra ? extra + '-' : '') + uuid.v4() + (suffix ? '-' + suffix : '');
 };
 
 exports.isDebugArtifact = function isDebugArtifact(name) {

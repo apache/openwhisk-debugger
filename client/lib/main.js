@@ -121,7 +121,8 @@ ws.on('open', function open() {
 ws.on('close', function() {
     //console.log('Remote connection closed');
 });
- 
+
+    var debugInProgress = false;
 ws.on('message', function(data, flags) {
     //console.log('MESSAGE ' + data + ' ||| ' + JSON.stringify(flags));
     
@@ -133,8 +134,26 @@ ws.on('message', function(data, flags) {
 	var message = JSON.parse(data);
 	switch (message.type) {
 	case 'invoke':
+	    var circuitBreaker = function circuitBreaker() {
+		ws.send(JSON.stringify({
+			type: 'circuit-breaker',
+			key: message.key,
+			activationId: message.activationId,
+		}));
+	    };
+
+	    if (debugInProgress) {
+		return circuitBreaker();
+	    }
+
+	    debugInProgress = true;
+	    eventBus.on('invocation-done', () => {
+		console.log('Debug session complete');
+		debugInProgress = false;
+	    });
+	    
 	    console.log('Debug session requested');
-	    //console.log(JSON.stringify(message, undefined, 4));
+	    // console.log(JSON.stringify(message, undefined, 4));
 
 	    var done = function done(err, result) {
 		// console.log('Finishing up this debug session');
@@ -147,13 +166,6 @@ ws.on('message', function(data, flags) {
 		}));
 
 		//ws.close();
-	    };
-	    var circuitBreaker = function circuitBreaker() {
-		ws.send(JSON.stringify({
-			type: 'circuit-breaker',
-			key: message.key,
-			activationId: message.activationId,
-		}));
 	    };
 
 	    if (message.onDone_trigger) {
