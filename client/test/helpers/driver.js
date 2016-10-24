@@ -34,16 +34,26 @@ function doTest(expectFailure, shouldDoThisSuccessfully, stepFn, args, rootPath)
 	    const steps = stepFn(name);
 	    
 	    var stepNumber = 0;
-	    var goody = false;
+	    var goody;
 
 	    // for the dead man's switch
 	    var lastStep;
 	    var lastOut;
+	    var expectedOutput, gotExpectedOutput;
 
 	    function doStep() {
-		// console.log(("STEP " + steps[stepNumber]).green);
+		var step = steps[stepNumber++];
+
+		if (typeof step == "object") {
+		    expectedOutput = step.expectedOutput;
+		    gotExpectedOutput = false;
+		    step = step.input;
+		}
+
+		// console.log("STEP".green, step, expectedOutput, typeof step);
+		
 		lastStep = Date.now();
-		child.stdin.write(steps[stepNumber++] + '\n');
+		child.stdin.write(step + '\n');
 	    }
 	    function redoStep() {
 		// console.log(("REDO STEP " + steps[stepNumber]).red);
@@ -92,7 +102,16 @@ function doTest(expectFailure, shouldDoThisSuccessfully, stepFn, args, rootPath)
 			   || data.indexOf('break in') >= 0
 			   || data.indexOf('(Pdb)') >= 0
 			   || data.indexOf('stopped') >= 0) {
-		    goody = true;
+		    //
+		    // the cumulative goodness is: if we are good so
+		    // far (or this is our first step) and either we
+		    // have no expected output, or we got it
+		    //
+		    goody = goody === undefined || goody && !expectedOutput || gotExpectedOutput;
+
+		    // reset the got expected output bit
+		    expectedOutput = undefined;
+		    gotExpectedOutput = false;
 			
 		    if (stepNumber === steps.length) {
 			child.stdin.write('quit\n');
@@ -100,6 +119,8 @@ function doTest(expectFailure, shouldDoThisSuccessfully, stepFn, args, rootPath)
 		    } else {
 			doStep();
 		    }
+		} else if (expectedOutput && data.indexOf(expectedOutput) >= 0) {
+		    gotExpectedOutput = true;
 		}
 	    });
 	    child.on('exit', (code) => {
