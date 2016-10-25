@@ -70,7 +70,7 @@ Thus, please make any code changes prior to the debugger entering your action. W
 
 Once you return to the `wskdb` REPL, you can choose to publish the changes back to the OpenWhisk servers:
 
-![The diff and publish commands](docs/commands/diff_and_publish.png")
+![The diff and publish commands](docs/commands/diff_and_publish.png)
 
 ## Getting Help
 
