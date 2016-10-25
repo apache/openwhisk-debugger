@@ -135,6 +135,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 			       && message.indexOf('Assertion failed') < 0
 			       && message.indexOf('listening on port') < 0
 			       && message.indexOf('another process already listening') < 0
+			       && message.indexOf('exceptionWithHostPort') < 0
 			       && message.indexOf('use a different port') < 0) {
 			//
 			// ignore some internal errors in node-inspector
@@ -143,8 +144,18 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		    }
 		});
 
+		var onInvocationDone = function() {
+		    try {
+			child.__killedByWSKDBInvocationDone = true;
+			kill(child.pid);
+		    } catch (err) {
+			console.error('Error cleaning up after activation completion', err);
+		    }
+		};
+		
 		function cleanUpSubprocesses(err, stdout, stderr) {
 		    if (addrInUse) {
+			eventBus.removeListener('invocation-done', onInvocationDone);
 			return trySpawnWithBrowser(webPort + 1, debugPort + 1);
 		    } else if (err) {
 			console.log('Error launching debugger', err);
@@ -165,14 +176,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		// the activation that we are debugging has
 		// finished. kill the child debugger process
 		//
-		eventBus.on('invocation-done', () => {
-		    try {
-			child.__killedByWSKDBInvocationDone = true;
-			kill(child.pid);
-		    } catch (err) {
-			console.error('Error cleaning up after activation completion', err);
-		    }
-		});
+		eventBus.on('invocation-done', onInvocationDone);
 
 	    } /* end of trySpawnWithBrowser */
 

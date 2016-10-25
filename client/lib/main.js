@@ -123,6 +123,11 @@ ws.on('close', function() {
 });
 
     var debugInProgress = false;
+    eventBus.on('invocation-done', () => {
+	console.log('Debug session complete');
+	debugInProgress = false;
+    });
+    
 ws.on('message', function(data, flags) {
     //console.log('MESSAGE ' + data + ' ||| ' + JSON.stringify(flags));
     
@@ -147,10 +152,6 @@ ws.on('message', function(data, flags) {
 	    }
 
 	    debugInProgress = true;
-	    eventBus.on('invocation-done', () => {
-		console.log('Debug session complete');
-		debugInProgress = false;
-	    });
 	    
 	    console.log('Debug session requested');
 	    // console.log(JSON.stringify(message, undefined, 4));
