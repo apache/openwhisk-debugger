@@ -1,4 +1,4 @@
-# OpenWhisk Debugger
+# wskdb: The OpenWhisk Debugger
 
 This project currently supports debugging [OpenWhisk](https://console.ng.bluemix.net/openwhisk) actions written in NodeJS, Python, and Swift. The debugger will arrange things so that the actions you wish to debug will be offloaded from the main OpenWhisk servers and instead run on your laptop. You can then, from within the debugger, inspect and modify values. For NodeJS actions, you can even modify code and publish those changes back to the OpenWhisk servers.
 
