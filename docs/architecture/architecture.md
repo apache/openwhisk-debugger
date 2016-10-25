@@ -10,8 +10,8 @@ When attaching to an action, the debugger creates a *trampoline* that allows man
 
 We will continue to flesh out this section. 
 
-![Successful Invocations](offload_successful_invocation.pdf "Routing of a successful invocation")
+![Successful Invocations](offload_successful_invocation.png "Routing of a successful invocation")
 
-![Aborted Invocations](offload_aborted_invocation.pdf "Routing of an aborted invocation")
+![Aborted Invocations](offload_aborted_invocation.png "Routing of an aborted invocation")
 
-![Handling Sequences](offload_sequence.pdf "Routing of an action sequence")
+![Handling Sequences](offload_sequence.png "Routing of an action sequence")

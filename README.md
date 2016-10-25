@@ -90,7 +90,7 @@ Welcome to the OpenWhisk Debugger
 
 ## Notes on the Architecture
 
-If you are curious as to the inner workings of the debugger, you can read more [here](docs/architecture.md). In short, `wskdb` operates by graph rewriting. In a way reminiscent of conventional debuggers, `wskdb` will install a *trampoline* that allows insertion of a breakpoint that re-routes invocations to your local machine.
+If you are curious as to the inner workings of the debugger, you can read more [here](docs/architecture/architecture.md). In short, `wskdb` operates by graph rewriting. In a way reminiscent of conventional debuggers, `wskdb` will install a *trampoline* that allows insertion of a breakpoint that re-routes invocations to your local machine.
 
 ### License
 
