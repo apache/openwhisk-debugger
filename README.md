@@ -106,6 +106,26 @@ This screenshot illustrates an example session of attaching, invoking, and debug
 
 ![Python Example](docs/python/example.png "Routing of a successful invocation")
 
+### NodeJS
+
+In this example, I will use the debugger to inpsect and modify a NodeJS action that prints out a simple hello message. To start debugging a NodeJS action, attach it to the debugger and then invoke. 
+
+<img src="docs/nodejs/node-invokeAction.png" width="600px"/>
+
+As shown in this screenshot, the action takes two parameters: name and place. Their initial values are "Kerry" and "Pittsburgh". 
+
+The debugger will be opened in a browser window. It will first pause at a welcome message. Currently, there are three things the user can do in the dubugger UI. First, the user can change the action's source code by clicking on the code and editing it. Note that currently the user can only edit the code before the debugger entering the main action function. In this example, I change the code to say "hi" instead of "hello". I then save the change and press the "go" button to enter the main function. The second thing the user can do with the debugger is to inspect parameters and change their values using the "Local" tab in the right panel. Here I change the value of the place parameter to "New York". Lastly, the user can set up new breakpoints by clicking on the line number. Here I set a breakpoint at the return statement (line 5). See the recording below for a demo. When the action finishes running, a message will appear to tell the user to return to the CLI to view the result. 
+
+<img src="docs/nodejs/node-debug.gif" width="600px"/>
+
+The function output now becomes "Hi, Kerry from New York.".
+
+<img src="docs/nodejs/node-result.png" width="600px"/>
+
+With the diff command, the user can use the debugger to compare the new and old version of the code. Once satisifed, the user can publish the changes to the cloud to make it live using the publish command. 
+
+<img src="docs/nodejs/node-diffPublish.png" width="600px"/>
+
 
 ## Notes on the Architecture
 
