@@ -86,11 +86,19 @@ ws.on('open', function open() {
 	}
     }, 5000);
 
+    process.on('SIGINT', () => {
+	//
+	// clean up all stubs
+	//
+	console.log('Cleaning up');
+	require('./rewriter').clean(wskprops, process.exit); // note: clean versus detachAll
+    });
+
     process.on('exit', function onExit() {
 	try {
-	    console.log('Goodbye!'.red);
+	    // console.log('Goodbye!'.red);
 	    clearInterval(keepAlive);
-	    
+
 	    ws.send(JSON.stringify({
 		type: 'disconnect'
 	    }, function ack() {
@@ -219,4 +227,4 @@ ws.on('open', function open() {
 });
 */
 
-};
+}; /* end of exports.main() */
