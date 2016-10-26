@@ -4,6 +4,8 @@ This project currently supports debugging [OpenWhisk](https://console.ng.bluemix
 
 The debugger currently supports inspecting an individual action, as well as invocations of this action as it occurs within **sequences** or **rules**. For example, if you have an OpenWhisk rule that fires a given action in response to a some trigger, you can attach to that action and debug, on your laptop, invocations triggered by the cloud.
 
+To see the debugger in action, you can view videos showing wskdb [debugging a sequence](https://youtu.be/_ZYXr5cUGbs) and [debugging a live rule](https://youtu.be/ardDxkwjeuA).
+
 ## Usage
 
 Start the debug client:
