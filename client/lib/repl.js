@@ -64,8 +64,8 @@ var detach = {
 };
 var exit = {
     handler: function(wskprops) {
-	//console.log('Cleaning up'.red);
-	rewriter.detachAll(wskprops, process.exit);
+	console.log('Cleaning up');
+	rewriter.clean(wskprops, process.exit); // note: clean versus detachAll
     },
     description: 'Quit the debugger',
     synchronous: true

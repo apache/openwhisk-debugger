@@ -112,11 +112,12 @@ function doTest(expectFailure, shouldDoThisSuccessfully, stepFn, args, rootPath)
 		    // reset the got expected output bit
 		    expectedOutput = undefined;
 		    gotExpectedOutput = false;
-			
+
 		    if (stepNumber === steps.length) {
+			stepNumber = -1;
 			child.stdin.write('quit\n');
 			child.stdin.end();
-		    } else {
+		    } else if (stepNumber >= 0) {
 			doStep();
 		    }
 		} else if (expectedOutput && data.indexOf(expectedOutput) >= 0) {
