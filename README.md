@@ -108,7 +108,7 @@ This screenshot illustrates an example session of attaching, invoking, and debug
 
 In this example, I will use the debugger to inpsect and modify a NodeJS action that prints out a simple hello message. To start debugging a NodeJS action, attach it to the debugger and then invoke. 
 
-![Node invoke](docs/nodejs/node-invokeAction.png =100x)
+<img src="docs/nodejs/node-invokeAction.png" width="200px"/>
 
 As shown in this screenshot, the action takes two parameters: name and place. Their initial values are "Kerry" and "Pittsburgh". 
 
