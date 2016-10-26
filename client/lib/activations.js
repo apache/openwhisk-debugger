@@ -39,12 +39,12 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
 	//
 	// this is the poll function
 	//
-	var pollOnce = function() {
+	var pollOnce = function(since) {
 	    //
 	    // scan the recent activations, looking for the
 	    // anticipated activation by invoked-entity name
 	    //
-	    ow.activations.list({ limit: 5, name: waitForThisAction, since: options.since, docs: true }).then(list => {
+	    ow.activations.list({ limit: 1, name: waitForThisAction, since: since, docs: true }).then(list => {
 		var allDone = false;
 		for (var i = 0; i < list.length; i++) {
 		    var activationDetails = list[i];
@@ -70,15 +70,24 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
 		    //
 		    // not yet, try again in a little bit
 		    //
-		    setTimeout(pollOnce, pollIntervalMillis);
+		    setTimeout(() => pollOnce(since), pollIntervalMillis);
 		}
 		    
 	    }).catch(errorWhile('listing activations', reject));
 	};
 
 	//
-	// start up the poller
+	// start up the poller. we first need to fetch the most recent "since"
 	//
-	setTimeout(pollOnce, pollIntervalMillis);
+	ow.activations.list({ limit: 1, docs: true }).then(lastOne => {
+	    //
+	    // if no activations were found, then use "now"
+	    //
+	    var since = !lastOne
+		? options.since || Date.now()
+		: lastOne[0].end;
+
+	    setTimeout(() => pollOnce(since), pollIntervalMillis);
+	});
     });
 };
