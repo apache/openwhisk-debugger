@@ -1,7 +1,7 @@
 {
-  "name": "wskdb-client",
+  "name": "openwhisk-debugger",
   "version": "0.0.1",
-  "description": "OpenWhisk debug client",
+  "description": "A debugger for OpenWhisk",
   "repository": "https://github.ibm.com/nickm/owdbg",
   "main": "client.js",
   "scripts": {
