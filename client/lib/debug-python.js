@@ -63,7 +63,7 @@ exports._debug = function debug(message, ws, echoChamberNames, done, commandLine
 
 		// we need to update the NODE_PATH env var, to add our local modules
 		var env = Object.assign({}, process.env);
-		env.PYTHONPATH = path.join(process.cwd(), 'lib', 'debug-bootstrap', 'python');
+		env.PYTHONPATH = path.join(__dirname, '..', 'lib', 'debug-bootstrap', 'python');
 		env.PYTHONUNBUFFERED = '1';
 
 		function spawnWithCLI() {

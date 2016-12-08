@@ -79,9 +79,9 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 
             // we need to update the NODE_PATH env var, to add our local modules
 	    var env = Object.assign({}, process.env);
-	    env.NODE_PATH = path.join(process.cwd(), 'node_modules')
-		+ ':' + path.join(process.cwd(), 'lib')
-		+ ':' + path.join(process.cwd(), 'deps', 'nodejs6', 'node_modules');
+	    env.NODE_PATH = path.join(__dirname, '..', 'node_modules')
+		+ ':' + path.join(__dirname, '..', 'lib')
+		+ ':' + path.join(__dirname, '..', 'deps', 'nodejs6', 'node_modules');
 
 	    function trySpawnWithBrowser(webPort, debugPort) {
 		var spawnOpts = {
@@ -89,7 +89,7 @@ exports._debug = function debugNodeJS(message, ws, echoChamberNames, done, comma
 		    // stdio: ['inherit', 'inherit', 'inherit'], // for debugging
 		    env: env
 		};
-		var child = spawn(path.join('node_modules', '.bin', 'node-debug'),
+		var child = spawn(path.join(__dirname, '..', 'node_modules', '.bin', 'node-debug'),
 				  ['--cli',
 				   '--debug-port', debugPort,
 				   '--web-port', webPort,
