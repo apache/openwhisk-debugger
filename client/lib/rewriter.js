@@ -156,7 +156,7 @@ var UpstreamAdapter = {
 				code: codeBuffer.toString('utf8')
 			    }
 			}
-		    }).then(resolve);
+		    }).then(resolve).catch(reject);
 		}
 	    });
 	});
@@ -189,7 +189,7 @@ var UpstreamAdapter = {
 													   actionBeingDebuggedNamespace) }));
 	    }
 	    return Promise.all(work)
-		.then(() => ow.rules.create({ ruleName: names.ruleName, trigger: names.triggerName, action: names.continuationName }),
+		.then(() => ow.rules.create({ ruleName: names.ruleName, trigger: '/_/'+names.triggerName, action: '/_/'+names.continuationName }),
 		      errorWhile('creating upstream adapter part 1'))
 		.then(() => names, errorWhile('creating upstream adapter part 2'));
 	} catch (e) {
@@ -232,8 +232,8 @@ var RuleRewriter = {
 	    // then the rule is T => entity, so we can simply create a new rule T => debugStub
 	    //
 	    return ow.rules.create({ ruleName: Namer.name('rule-clone'),
-				     trigger: ruleEntityWithDetails.trigger,
-				     action: names.debugStubName
+				     trigger: '/_/'+ruleEntityWithDetails.trigger,
+				     action: '/_/'+names.debugStubName
 				   })
 		.then(newRule => chainAttached[ruleEntityWithDetails.name] = names);
 	} else {
@@ -243,8 +243,8 @@ var RuleRewriter = {
 		// this means the rule maps T => sequence, where the sequence directly contains entity [..., entity, ... ]
 		//
 		return ow.rules.create({ ruleName: Namer.name('rule-clone'),
-					 trigger: ruleEntityWithDetails.trigger,
-					 action: details.before
+					 trigger: '/_/'+ruleEntityWithDetails.trigger,
+					 action: '/_/'+details.before
 				       })
 		    .then(newRule => chainAttached[ruleEntityWithDetails.name] = names);
 	    }
