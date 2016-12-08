@@ -1,14 +1,19 @@
 {
   "name": "openwhisk-debugger",
-  "version": "0.0.1",
+  "version": "0.0.10",
   "description": "A debugger for OpenWhisk",
   "repository": "https://github.ibm.com/nickm/owdbg",
   "main": "client.js",
+  "bin": {
+    "wskdb": "./bin/wskdb"
+  },
   "scripts": {
+    "prepublish": "./bin/prepublish",
+    "postinstall": "./bin/postinstall",
     "test": "./node_modules/.bin/jshint wskdb.js lib/*.js lib/commands/*.js && ./util/scanCode.sh && ava --verbose --serial"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Nick Mitchell",
+  "license": "Apache-2.0",
   "dependencies": {
     "argv": "0.0.2",
     "colors": "^1.1.2",

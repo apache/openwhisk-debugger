@@ -81,11 +81,10 @@ exports.init = function init() {
 		//
 		args.push('--production');
 	    }
-	    exec('npm', args, { cwd: process.cwd() , stdio: stdio }).on('exit', (err) => {
 		try {
-		    if (err) {
+		    /*		    if (err) {
 			return errDone(err);
-		    }
+			}*/
 	    
 		    //
 		    // here, we install the prerequisities dictated by OpenWhisk nodejs actions
@@ -126,7 +125,7 @@ exports.init = function init() {
 		} catch (err) {
 		    return errDone(err);
 		}
-	    });
+
 	} catch (err) {
 	    return errDone(err);
 	}

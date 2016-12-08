@@ -16,4 +16,6 @@
 # limitations under the License.
 #
 
+./bin/prepublish
+npm install
 node wskdb.js $@
