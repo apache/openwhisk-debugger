@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+mkdir deps/invoker 2> /dev/null
+cp ../invoker/owdbg-invoker.js deps/invoker

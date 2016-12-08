@@ -139,7 +139,7 @@ var UpstreamAdapter = {
 
     createInvoker: function createUpstreamAdapterInvoker_withActionClone(ow, names, actionBeingDebugged, actionBeingDebuggedNamespace) {
 	return new Promise((resolve, reject) => {
-	    fs.readFile(path.join('..', 'invoker', 'owdbg-invoker.js'), (err, codeBuffer) => {
+	    fs.readFile(path.join(__dirname, '..', 'deps', 'invoker', 'owdbg-invoker.js'), (err, codeBuffer) => {
 		if (err) {
 		    reject(err);
 		} else {
