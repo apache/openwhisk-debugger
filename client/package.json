@@ -1,6 +1,6 @@
 {
   "name": "openwhisk-debugger",
-  "version": "0.0.17",
+  "version": "0.0.20",
   "description": "A debugger for OpenWhisk",
   "repository": {
     "type": "git",

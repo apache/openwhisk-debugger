@@ -10,7 +10,7 @@ To see the debugger in action, you can view videos showing wskdb [debugging a li
 
 Start the debug client:
 
-![Startup](docs/startup.png)
+![Startup](/client/docs/startup.png)
 
 You will now be in the `wsdk` REPL. Issue `help` to see the list of available commands. 
 
@@ -28,12 +28,12 @@ If you wish to debug Python actions, you must have installed a version of Python
 
 You can list your actions directly from within the debugger REPL.
 
-![The list command](docs/commands/list.png)]
+![The list command](/client/docs/commands/list.png)]
 
 Note that, in this session, the user had already attached to action `a3`. You may wish to inspect the details of an action, or invoke it prior to attaching. If you haven't yet attached to the action you are invoking, the invocation will proceed as if you weren't in the debugger, and had issued a blocking invocation from the CLI.
 
-![The inspect command](docs/commands/inspect.png)
-![The invoke command](docs/commands/invoke.png "You may pass multiple parameters with -p p1 v1 -p p2 v2")
+![The inspect command](/client/docs/commands/inspect.png)
+![The invoke command](/client/docs/commands/invoke.png "You may pass multiple parameters with -p p1 v1 -p p2 v2")
 
 ## Attaching to an action
 
@@ -72,7 +72,7 @@ Thus, please make any code changes prior to the debugger entering your action. W
 
 Once you return to the `wskdb` REPL, you can choose to publish the changes back to the OpenWhisk servers:
 
-![The diff and publish commands](docs/commands/diff_and_publish.png)
+![The diff and publish commands](/client/docs/commands/diff_and_publish.png)
 
 ## Getting Help
 
@@ -104,13 +104,13 @@ Welcome to the OpenWhisk Debugger
 
 This screenshot illustrates an example session of attaching, invoking, and debugging, a Python action.
 
-![Python Example](docs/python/example.png "Routing of a successful invocation")
+![Python Example](/client/docs/python/example.png "Routing of a successful invocation")
 
 ### NodeJS
 
 In this example, I will use the debugger to inpsect and modify a NodeJS action that prints out a simple hello message. To start debugging a NodeJS action, attach it to the debugger and then invoke. 
 
-<img src="docs/nodejs/node-invokeAction.png" width="600px"/>
+<img src="/client/docs/nodejs/node-invokeAction.png" width="600px"/>
 
 As shown in this screenshot, the action takes two parameters: name and place. Their initial values are "Kerry" and "Pittsburgh". 
 
@@ -120,11 +120,11 @@ The debugger will be opened in a browser window. It will first pause at a welcom
 
 The function output now becomes "Hi, Kerry from New York.".
 
-<img src="docs/nodejs/node-result.png" width="600px"/>
+<img src="/client/docs/nodejs/node-result.png" width="600px"/>
 
 With the diff command, the user can use the debugger to compare the new and old version of the code. Once satisifed, the user can publish the changes to the cloud to make it live using the publish command. 
 
-<img src="docs/nodejs/node-diffPublish.png" width="600px"/>
+<img src="/client/docs/nodejs/node-diffPublish.png" width="600px"/>
 
 
 ## Notes on the Architecture
