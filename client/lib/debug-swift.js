@@ -62,7 +62,7 @@ function debugIt(eventBus, executablePath) {
 	    };
 	    try {
 		var child = spawn('lldb',
-				  ['-s', path.join(process.cwd(), 'lib', 'helpers', 'lldb.run'),
+				  ['-s', path.join(__dirname, '..', 'lib', 'helpers', 'lldb.run'),
 				   executablePath],
 				  spawnOpts);
 		child.on('exit', (code) => {
@@ -133,7 +133,7 @@ exports._debug = function debugSwift(message, ws, echoChamberNames, done, comman
 	code = code.substring(0, paren + 1) + '\n    // Hello from the OpenWhisk debugger. Welcome to your main method\n' + code.substring(paren + 1);
     }
 
-    fs.readFile(path.join('lib', 'debug-bootstrap.swift'), (err, codeBuffer) => {
+    fs.readFile(path.join(__dirname, '..', 'lib', 'debug-bootstrap.swift'), (err, codeBuffer) => {
 	//
 	// inline the bootstrapping logic into the file to be debugged
 	//

@@ -1,0 +1,10 @@
+/.initDone
+npm-debug*
+*.pyc
+*~
+#*
+*.log
+node_modules
+*.class
+target
+project
