@@ -1,6 +1,6 @@
 {
   "name": "openwhisk-debugger",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "A debugger for OpenWhisk",
   "repository": "https://github.ibm.com/nickm/owdbg",
   "main": "client.js",
