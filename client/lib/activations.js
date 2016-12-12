@@ -76,18 +76,26 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
 	    }).catch(errorWhile('listing activations', reject));
 	};
 
-	//
-	// start up the poller. we first need to fetch the most recent "since"
-	//
+	var since = options.since || Date.now();
+	setTimeout(() => pollOnce(since), pollIntervalMillis);
+    });
+};
+
+exports.mostRecentEnd = wskprops => {
+    return new Promise((resolve, reject) => {
+	var key = wskprops.AUTH;
+	var ow = openwhisk({
+	    api: api.host + api.path,
+	    api_key: key,
+	    namespace: '_' // special here, as activations are currently stored in the user's default namespace
+	});
+
 	ow.activations.list({ limit: 1, docs: true }).then(lastOne => {
 	    //
 	    // if no activations were found, then use "now"
 	    //
-	    var since = !lastOne
-		? options.since || Date.now()
-		: lastOne[0].end;
-
-	    setTimeout(() => pollOnce(since), pollIntervalMillis);
-	});
+	    resolve(lastOne[0].end || Date.now());
+	}).catch(reject);
     });
 };
+   

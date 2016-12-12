@@ -20,6 +20,7 @@ var uuid = require('uuid'),
     inquirer = require('inquirer'),
     openwhisk = require('openwhisk'),
     setupOpenWhisk = require('./util').setupOpenWhisk,
+    mostRecentEnd = require('./activations').mostRecentEnd,
     waitForActivationCompletion = require('./activations').waitForActivationCompletion,
     lister = require('./commands/list'),
     Namer = require('./namer'),
@@ -610,10 +611,9 @@ exports._invoke = function invoke() {
     // remember the time, so that the waitForActivationCompletion
     // doesn't look for previous invocations of the given action
     //
-    var now = Date.now();
-    
-    ow.actions.invoke({ actionName: invokeThisAction, params: params })
-	.then(() => waitForActivationCompletion(wskprops, eventBus, waitForThisAction, { result: true, since: now })
-	      .then(ok(next)))
-	.catch(errorWhile('invoking your specified action', next));
+    mostRecentEnd(wskprops)
+	.then(since => ow.actions.invoke({ actionName: invokeThisAction, params: params })
+	      .then(() => waitForActivationCompletion(wskprops, eventBus, waitForThisAction, { result: true, since: since })
+		    .then(ok(next)))
+	      .catch(errorWhile('invoking your specified action', next)));
 };
