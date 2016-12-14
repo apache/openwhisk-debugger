@@ -68,6 +68,9 @@ ws.on('open', function open() {
     console.log();
 
     var wskprops = propertiesParser.read(expandHomeDir('~/.wskprops'));
+    if (!wskprops.NAMESPACE) {
+	wskprops.NAMESPACE = '_';
+    }
     var key = wskprops.AUTH;
     ws.send(JSON.stringify({
 	type: 'init',
