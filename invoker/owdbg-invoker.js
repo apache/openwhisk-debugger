@@ -39,7 +39,7 @@ function main(params) {
 	    },
 	    json: true,
 	    body: {
-		key: whisk.getAuthKey(),
+		key: process.env.$__OW_API_KEY,
 		action: params.action,
 		namespace: params.namespace,
 		onDone_trigger: params.onDone_trigger,
@@ -69,7 +69,7 @@ function main(params) {
 			    headers: {
 				'Accept': 'application/json',
 				'Content-Type': 'application/json',
-				'AuthKey': whisk.getAuthKey()
+				'AuthKey': process.env.$__OW_API_KEY
 			    },
 			}, function(err, response, body) {
 			    if (err || response.statusCode != 200) {
