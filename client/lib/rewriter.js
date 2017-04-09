@@ -54,7 +54,7 @@ function echoContinuation(entity, entityNamespace) {
     return {
 	annotations: [{ key: 'debug', value: '/' + entityNamespace + '/' + entity }],
 	exec: {
-	    kind: 'nodejs',
+	    kind: 'nodejs:default',
 	    code: 'function main(params) { return params; }'
 	}
     };
@@ -153,7 +153,7 @@ var UpstreamAdapter = {
 					 { key: 'onDone_trigger', value: names.triggerName }
 					],
 			    exec: {
-				kind: 'nodejs:6',
+				kind: 'nodejs:default',
 				code: codeBuffer.toString('utf8')
 			    }
 			}
@@ -364,7 +364,7 @@ exports.attach = function attach(wskprops, options, next, entity) {
     }
 
     try {
-	var entityNamespace = wskprops.NAMESPACE;
+	var entityNamespace = '_';//wskprops.NAMESPACE;
 	var ow = setupOpenWhisk(wskprops);
 
 	var doAttach = function doAttach() {
@@ -544,7 +544,7 @@ exports._invoke = function invoke() {
     var args = Array.prototype.slice.call(arguments);
     var wskprops = args.shift();
     var eventBus = args.shift();
-    var namespace = wskprops.NAMESPACE;
+    //var namespace = wskprops.NAMESPACE;
     var next = args.shift();
     var action = args.shift();
 

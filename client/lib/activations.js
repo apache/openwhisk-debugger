@@ -31,8 +31,7 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
     var key = wskprops.AUTH;
     var ow = openwhisk({
 	api: api.host + api.path,
-	api_key: key,
-	namespace: '_' // special here, as activations are currently stored in the user's default namespace
+	api_key: key
     });
 
     return new Promise((resolve, reject) => {
@@ -44,7 +43,8 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
 	    // scan the recent activations, looking for the
 	    // anticipated activation by invoked-entity name
 	    //
-	    ow.activations.list({ limit: 1, name: waitForThisAction, since: since, docs: true }).then(list => {
+	    ow.activations.list({ limit: 1, name: waitForThisAction, xsince: since, docs: true }).then(list => {
+		console.log(list.length,waitForThisAction,Date.now()-since, list[0].start-since, list[0].end-since)
 		var allDone = false;
 		for (var i = 0; i < list.length; i++) {
 		    var activationDetails = list[i];

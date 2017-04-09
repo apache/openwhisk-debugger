@@ -26,11 +26,9 @@ var openwhisk = require('openwhisk'),
  */
 exports.setupOpenWhisk = function setupOpenWhisk(wskprops) {
     var key = wskprops.AUTH;
-    var namespace = wskprops.NAMESPACE;
     var ow = openwhisk({
 	api: api.host + api.path,
-	api_key: key,
-	namespace: namespace
+	api_key: key
     });
     return ow;
 };
