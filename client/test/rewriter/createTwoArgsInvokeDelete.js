@@ -17,7 +17,7 @@
 import it from '../helpers/driver'
 
 it.should('create an action that takes two arguments, then invoke, delete, and finally quit without error', (name) => [
-    `create ${name} nodejs function main(params) { return { message: "Hello " + params.name + " " + params.place} }`,
+    `create ${name} nodejs:default function main(params) { return { message: "Hello " + params.name + " " + params.place} }`,
     { input: `invoke ${name} -p name noodle -p place gorp`, expectedOutput: 'Hello noodle gorp' },
     `delete ${name}`
 ], ['-c']); // use the cli debugger

@@ -17,7 +17,7 @@
 import it from '../helpers/driver'
 
 it.should('create a python action, then attach, invoke, detach, delete, and finally quit without error', (name) => [
-    `create ${name} python import sys\\n\\ndef main(dict):\\n    return { \'message\': \'Hello world\' }`,
+    `create ${name} python:default import sys\\n\\ndef main(dict):\\n    return { \'message\': \'Hello world\' }`,
     `attach ${name} -a`,
     `invoke ${name}`,
     `c`,
