@@ -40,7 +40,6 @@ exports.errorWhile = function errorWhile(inOperation, callback) {
     return function(err) {
 	if (err && err.toString().indexOf('404')) {
 	    console.error('Error: entity does not exist while in this operation: ', inOperation);
-	    console.log(err)
 	} else {
 	    console.error('Error ' + inOperation);
 	    console.error(err);
