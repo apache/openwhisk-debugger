@@ -12,7 +12,7 @@
   },
   "scripts": {
     "prepublish": "./bin/prepublish",
-    "postinstall": "./bin/postinstall",
+    "postinstall": "node ./bin/postinstall",
     "test": "./node_modules/.bin/jshint wskdb.js lib/*.js lib/commands/*.js && ./util/scanCode.sh && ava --verbose --serial"
   },
   "bugs": {
