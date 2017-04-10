@@ -102,9 +102,29 @@ var create = {
     description: 'Create an action',
     synchronous: true
 };
+var createTrigger = {
+    handler: require('./commands/create-trigger').create,
+    description: 'Create a trigger',
+    synchronous: true
+};
+var createRule = {
+    handler: require('./commands/create-rule').create,
+    description: 'Create a rule',
+    synchronous: true
+};
 var deleteAction = {
     handler: require('./commands/delete').deleteAction,
     description: 'Delete an action',
+    synchronous: true
+};
+var deleteTrigger = {
+    handler: require('./commands/delete-trigger').delete,
+    description: 'Delete a trigger',
+    synchronous: true
+};
+var deleteRule = {
+    handler: require('./commands/delete-rule').delete,
+    description: 'Delete a rule',
     synchronous: true
 };
 var diff = {
@@ -157,7 +177,11 @@ commandHandlers = {
     c: clean,
 
     create: create,
+    'create-trigger': createTrigger,
+    'create-rule': createRule,
     delete: deleteAction,
+    'delete-trigger': deleteTrigger,
+    'delete-rule': deleteRule,
 
     help: help,
     h: help,
