@@ -17,7 +17,7 @@
 import it from '../helpers/driver'
 
 it.should('create an action, report any diffs, and then quit without error', (name) => [
-    `create ${name} nodejs function main(params) { return { message: "Hello " + params.name } }`,
+    `create ${name} nodejs:default function main(params) { return { message: "Hello " + params.name } }`,
     `diff ${name}`,
     `delete ${name}`
 ])

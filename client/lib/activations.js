@@ -31,8 +31,7 @@ exports.waitForActivationCompletion = function waitForActivationCompletion(wskpr
     var key = wskprops.AUTH;
     var ow = openwhisk({
 	api: api.host + api.path,
-	api_key: key,
-	namespace: '_' // special here, as activations are currently stored in the user's default namespace
+	api_key: key
     });
 
     return new Promise((resolve, reject) => {

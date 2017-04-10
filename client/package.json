@@ -1,6 +1,6 @@
 {
   "name": "openwhisk-debugger",
-  "version": "0.0.21",
+  "version": "0.0.23",
   "description": "A debugger for OpenWhisk",
   "repository": {
     "type": "git",
@@ -46,7 +46,7 @@
     "inquirer": "git://github.com/starpit/Inquirer.js.git",
     "node-inspector": "git://github.com/kerryspchang/node-inspector.git",
     "open": "0.0.5",
-    "openwhisk": "git://github.com/openwhisk/openwhisk-client-js",
+    "openwhisk": "^3.4.1",
     "properties-parser": "^0.3.1",
     "request": "^2.75.0",
     "tmp": "0.0.29",
