@@ -23,6 +23,7 @@ var uuid = require('uuid'),
     mostRecentEnd = require('./activations').mostRecentEnd,
     waitForActivationCompletion = require('./activations').waitForActivationCompletion,
     lister = require('./commands/list'),
+    triggers = require('./commands/create-trigger').created,
     Namer = require('./namer'),
     ok = require('./repl-messages').ok,
     ok_ = require('./repl-messages').ok_,
@@ -223,28 +224,31 @@ var RuleRewriter = {
 	//var fqn = '/' + entityNamespace + '/' + entity;
 
 	return ruleEntityThatMaybeUses.name !== entity
-	    && (ruleEntityThatMaybeUses.action === entity
+	    && (ruleEntityThatMaybeUses.action.name === entity /*&& ruleEntityThatMaybeUses.action.path === entityNamespace*/
 		|| isAnInstrumentedSequence[ruleEntityThatMaybeUses.action]);
     },
 
     rewrite: function cloneRule(ow, ruleEntityWithDetails, entity, entityNamespace, names) {
-	if (ruleEntityWithDetails.action === entity) {
+	if (ruleEntityWithDetails.action.name === entity) {
 	    //
 	    // then the rule is T => entity, so we can simply create a new rule T => debugStub
 	    //
 	    return ow.rules.create({ ruleName: Namer.name('rule-clone'),
-				     trigger: '/_/'+ruleEntityWithDetails.trigger,
+				     trigger: '/_/'+ruleEntityWithDetails.trigger.name,
 				     action: '/_/'+names.debugStubName
 				   })
-		.then(newRule => chainAttached[ruleEntityWithDetails.name] = names);
+		.then(newRule => {
+		    chainAttached[ruleEntityWithDetails.name] = names;
+		    chainAttached[ruleEntityWithDetails.trigger.name] = names;
+		});
 	} else {
-	    var details = chainAttached[ruleEntityWithDetails.action];
+	    var details = chainAttached[ruleEntityWithDetails.action.name];
 	    if (details) {
 		//
 		// this means the rule maps T => sequence, where the sequence directly contains entity [..., entity, ... ]
 		//
 		return ow.rules.create({ ruleName: Namer.name('rule-clone'),
-					 trigger: '/_/'+ruleEntityWithDetails.trigger,
+					 trigger: '/_/'+ruleEntityWithDetails.trigger.name,
 					 action: '/_/'+details.before
 				       })
 		    .then(newRule => chainAttached[ruleEntityWithDetails.name] = names);
@@ -548,6 +552,9 @@ exports._invoke = function invoke() {
     var next = args.shift();
     var action = args.shift();
 
+    var isTrigger = triggers[action];
+    var type = isTrigger ? 'triggers' : 'actions';
+
     if (!action || action === '-p' || action === 'invoke') {
 	//
 	// user did not provide an action
@@ -569,7 +576,11 @@ exports._invoke = function invoke() {
     var invokeThisAction, waitForThisAction;
     
     var attachedTo = attached[action];
-    if (!attachedTo) {
+    if (isTrigger) {
+	invokeThisAction = action;
+	waitForThisAction = chainAttached[action].continuationName;
+	
+    } else if (!attachedTo) {
 	var seq = chainAttached[action];
 	if (seq) {
 	    if (seq.before) {
@@ -612,8 +623,8 @@ exports._invoke = function invoke() {
     // doesn't look for previous invocations of the given action
     //
     mostRecentEnd(wskprops)
-	.then(since => ow.actions.invoke({ actionName: invokeThisAction, params: params })
+	.then(since => ow[type].invoke({ name: invokeThisAction, params: params })
 	      .then(() => waitForActivationCompletion(wskprops, eventBus, waitForThisAction, { result: true, since: since })
 		    .then(ok(next)))
-	      .catch(errorWhile('invoking your specified action', next)));
+	      .catch(errorWhile(`invoking your specified ${isTrigger ? 'trigger' : 'action'}`, next)));
 };

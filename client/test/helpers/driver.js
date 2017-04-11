@@ -67,20 +67,20 @@ function doTest(expectFailure, shouldDoThisSuccessfully, stepFn, args, rootPath)
 		}
 	    }, 2000);
 
-	    function errorInOutput() {
+	    function errorInOutput(err) {
 		goody = false;
 		if (expectFailure) {
 		    resolve();
 		    return true;
 		} else {
-		    reject('Step ' + (stepNumber - 1) + ' failed: ' + steps[stepNumber - 1]);
+		    reject('Step ' + (stepNumber - 1) + ' failed: ' + steps[stepNumber - 1] + ' with ' + err);
 		    return false;
 		}
 	    }
 	    
 	    child.stderr.on('data', (data) => {
 		if (data.toString().indexOf('Error') >= 0) {
-		    if (errorInOutput()) {
+		    if (errorInOutput(data.toString())) {
 			//
 			// don't print the error, as this was expected
 			//
@@ -95,7 +95,7 @@ function doTest(expectFailure, shouldDoThisSuccessfully, stepFn, args, rootPath)
 		lastOut = Date.now(); // for the dead man's switch
 		
 		if (data.indexOf('Error') >= 0) {
-		    errorInOutput();
+		    errorInOutput(data);
 			
 		} else if (data.indexOf('ok') == 0
 			   || data.indexOf('\nok\n') >= 0

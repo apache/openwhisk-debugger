@@ -29,7 +29,7 @@ exports.created = {};
 exports.create = function create() {
     var wskprops = arguments[0];
     var next = arguments[1];
-    var name = arguments[2];
+    var name = arguments.length > 3 && arguments[2];
     var kind = arguments[3];
     var code;
 
