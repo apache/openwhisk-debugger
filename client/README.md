@@ -37,7 +37,7 @@ Note that, in this session, the user had already attached to action `a3`. You ma
 
 ## Attaching to an action
 
-You can attach to an attach on startup by passing the action name to the initial invocation. Say for example you wish to attach to an action `foo`:
+You can attach to an action on startup by passing the action name to the initial invocation. Say for example you wish to attach to an action `foo`:
 
 ```ShellSession
 % ./wskdb foo
@@ -45,7 +45,7 @@ Attaching to foo
    Creating action trampoline
 ```
 
-You may also choose to launch the debugger and attach to `foo` later:
+You may also choose to launch the debugger and attach to action `foo` later:
 
 ```ShellSession
 (wskdb) attach foo
