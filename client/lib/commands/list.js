@@ -1,11 +1,12 @@
 /*
- * Copyright 2015-2016 IBM Corporation
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,9 +25,9 @@ var created = require('./create').created,
 
 exports._list = function _list(ow, callback, type) {
     ow[type || 'actions']
-	.list({ limit: 200 })
-	.then(function onList(L) { callback(L, ow); },
-	      errorWhile('fetching actions', callback));
+    .list({ limit: 200 })
+    .then(function onList(L) { callback(L, ow); },
+          errorWhile('fetching actions', callback));
 };
 
 exports.list = function list(wskprops, callback, type) {
@@ -36,25 +37,25 @@ exports.list = function list(wskprops, callback, type) {
 
 exports.listToConsole = function listToConsole(wskprops, options, next) {
     if (options.help) {
-	return next();
+    return next();
     }
 
     console.log('Available actions:'.blue);
     function print(actions) {
-	actions
-	    .filter(action => options && options.full || !Namer.isDebugArtifact(action.name))
-	    .forEach(action => {
-		var attached = isDirectlyAttachedTo(action.name);
-		var newly = created[action.name];
-		var tabbed = attached || newly;
-		
-		console.log('    ', action.name[attached ? 'red' : newly ? 'green' : 'reset']
-			    + (tabbed ? '\t\t\t\t\t' : '')
-			    + (attached ? 'attached'.red : '')
-			    + (newly ? 'new'.green : ''));
-	    });
+    actions
+        .filter(action => options && options.full || !Namer.isDebugArtifact(action.name))
+        .forEach(action => {
+        var attached = isDirectlyAttachedTo(action.name);
+        var newly = created[action.name];
+        var tabbed = attached || newly;
 
-	ok_(next);
+        console.log('    ', action.name[attached ? 'red' : newly ? 'green' : 'reset']
+                + (tabbed ? '\t\t\t\t\t' : '')
+                + (attached ? 'attached'.red : '')
+                + (newly ? 'new'.green : ''));
+        });
+
+    ok_(next);
     }
 
     exports.list(wskprops, print);

@@ -1,11 +1,12 @@
 /*
- * Copyright 2015-2016 IBM Corporation
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +17,8 @@
 
 exports.ok = function ok(next) {
     return function() {
-	console.log('ok');
-	next();
+    console.log('ok');
+    next();
     };
 };
 
@@ -27,26 +28,25 @@ exports.ok_ = function ok_(next) {
 
 exports.okAfter = function okAfter(f, next) {
     return function() {
-	f.apply(undefined, arguments);
-	exports.ok_(next);
+    f.apply(undefined, arguments);
+    exports.ok_(next);
     };
 };
 
 /**
  * Log an error, and continue
- *
  */
 exports.errorWhile = function errorWhile(inOperation, callback) {
     return function(err) {
-	if (err && err.toString().indexOf('404')) {
-	    console.error('Error: entity does not exist while in this operation: ', inOperation);
-	} else {
-	    console.error('Error ' + inOperation);
-	    console.error(err);
-	}
-	
-	if (callback) {
-	    callback();
-	}
+    if (err && err.toString().indexOf('404')) {
+        console.error('Error: entity does not exist while in this operation: ', inOperation);
+    } else {
+        console.error('Error ' + inOperation);
+        console.error(err);
+    }
+
+    if (callback) {
+        callback();
+    }
     };
 };

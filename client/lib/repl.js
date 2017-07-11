@@ -1,11 +1,12 @@
 /*
- * Copyright 2015-2016 IBM Corporation
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,29 +25,29 @@ var argv = require('argv'),
 var commandHandlers; // defined below. helping out jshint here
 var help = {
     handler: function help() {
-	console.log('The available commands are:');
-	console.log();
+    console.log('The available commands are:');
+    console.log();
 
-	var grouped = {};
-	for (var x in commandHandlers) {
-	    if (commandHandlers.hasOwnProperty(x)) {
-		var already = grouped[commandHandlers[x].description];
-		if (already) {
-		    grouped[commandHandlers[x].description] = already + ', ' + x;
-		} else {
-		    grouped[commandHandlers[x].description] = x;
-		}
-	    }
-	}
-	
-	var pruned = [];
-	for (var d in grouped) {
-	    if (grouped.hasOwnProperty(d)) {
-		pruned.push({ command: grouped[d], description: d });
-	    }
-	}
+    var grouped = {};
+    for (var x in commandHandlers) {
+        if (commandHandlers.hasOwnProperty(x)) {
+        var already = grouped[commandHandlers[x].description];
+        if (already) {
+            grouped[commandHandlers[x].description] = already + ', ' + x;
+        } else {
+            grouped[commandHandlers[x].description] = x;
+        }
+        }
+    }
 
-	console.log(columnify(pruned, { minWidth: 18 }));
+    var pruned = [];
+    for (var d in grouped) {
+        if (grouped.hasOwnProperty(d)) {
+        pruned.push({ command: grouped[d], description: d });
+        }
+    }
+
+    console.log(columnify(pruned, { minWidth: 18 }));
     },
     description: 'Print this help text'
 };
@@ -64,8 +65,8 @@ var detach = {
 };
 var exit = {
     handler: function(wskprops) {
-	console.log('Cleaning up');
-	rewriter.clean(wskprops, process.exit); // note: clean versus detachAll
+    console.log('Cleaning up');
+    rewriter.clean(wskprops, process.exit); // note: clean versus detachAll
     },
     description: 'Quit the debugger',
     synchronous: true
@@ -154,7 +155,7 @@ commandHandlers = {
     inspect: inspect,
     ins: inspect,
     get: inspect,
-    
+
     fire: fire,
     f: fire,
 
@@ -198,69 +199,69 @@ commandHandlers = {
  */
 function repl(wskprops, eventBus, attachTo) {
     function handleReplCommand(response) {
-	if (response.command.length === 0) {
-	    // user hit return;
-	    return repl(wskprops, eventBus);
-	}
-	
-	var commandLine = response.command.split(/\s+/);
-	var command = commandLine.shift();
-	var handler = commandHandlers[command];
+    if (response.command.length === 0) {
+        // user hit return;
+        return repl(wskprops, eventBus);
+    }
 
-	var options;
-	if (handler.options) {
-	    argv.clear();
-	    argv.description = 'Usage: ' + command + ' [options]';
-	    argv.options.help.example = '';
-	    argv.options.help.onset = (args) => {
-		argv.help(args.mod);
-	    };
-	    options = argv.option(handler.options).run(commandLine).options;
-	}
+    var commandLine = response.command.split(/\s+/);
+    var command = commandLine.shift();
+    var handler = commandHandlers[command];
 
-	if (handler.synchronous) {
-	    // the second parameter is the call back to the repl
-	    // when done with the synchronous operation
-	    commandLine.unshift(repl.bind(undefined, wskprops, eventBus));
-	}
+    var options;
+    if (handler.options) {
+        argv.clear();
+        argv.description = 'Usage: ' + command + ' [options]';
+        argv.options.help.example = '';
+        argv.options.help.onset = (args) => {
+        argv.help(args.mod);
+        };
+        options = argv.option(handler.options).run(commandLine).options;
+    }
 
-	if (handler.options) {
-	    commandLine.unshift(options);
-	}
+    if (handler.synchronous) {
+        // the second parameter is the call back to the repl
+        // when done with the synchronous operation
+        commandLine.unshift(repl.bind(undefined, wskprops, eventBus));
+    }
 
-	if (handler.needsEventBus) {
-	    commandLine.unshift(eventBus);
-	}
+    if (handler.options) {
+        commandLine.unshift(options);
+    }
 
-	// the first parameter is wskprops
-	commandLine.unshift(wskprops);
+    if (handler.needsEventBus) {
+        commandLine.unshift(eventBus);
+    }
 
-	commandLine.push(response.command);
+    // the first parameter is wskprops
+    commandLine.unshift(wskprops);
 
-	// call to the handler!
-	try {
-	    handler.handler.apply(undefined, commandLine);
-	} catch (e) {
-	    console.error(e);
-	}
+    commandLine.push(response.command);
 
-	if (!handler.synchronous) {
-	    // if async, then restart the repl right away
-	    repl(wskprops, eventBus);
-	}
+    // call to the handler!
+    try {
+        handler.handler.apply(undefined, commandLine);
+    } catch (e) {
+        console.error(e);
+    }
+
+    if (!handler.synchronous) {
+        // if async, then restart the repl right away
+        repl(wskprops, eventBus);
+    }
     } /* end of handleReplCommand */
-    
+
     if (attachTo) {
-	handleReplCommand({ command: 'attach ' + attachTo });
+    handleReplCommand({ command: 'attach ' + attachTo });
     } else {
-	prompt.prompt([{
-	    name: 'command', message: '(wskdb)',
-	    prefixMessage: '', // override the default question mark prefix
-	    validate: function(line) {
-		var commandLine = line.split(/\s+/);
-		return line.length === 0 || commandHandlers[commandLine[0]] ? true : 'Invalid command';
-	    }
-	}]).then(handleReplCommand);
+    prompt.prompt([{
+        name: 'command', message: '(wskdb)',
+        prefixMessage: '', // override the default question mark prefix
+        validate: function(line) {
+        var commandLine = line.split(/\s+/);
+        return line.length === 0 || commandHandlers[commandLine[0]] ? true : 'Invalid command';
+        }
+    }]).then(handleReplCommand);
     }
 }
 
