@@ -1,11 +1,12 @@
 /*
- * Copyright 2015-2016 IBM Corporation
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,39 +41,39 @@ exports.applyPatch = function applyPatch(data, patch) {
     var dataIndex = 1;
 
     if (!patch.hunks) {
-	//
-	// patch is a textual unified diff. parse it
-	//
-	patch = JsDiff.parsePatch(patch)[0];
+    //
+    // patch is a textual unified diff. parse it
+    //
+    patch = JsDiff.parsePatch(patch)[0];
     }
-    
+
     patch.hunks.forEach((hunk, hunkIndex) => {
-	for (var i = dataIndex; i < hunk.oldStart; i++) {
-	    newLines.push(lines[i - 1]);
-	}
+    for (var i = dataIndex; i < hunk.oldStart; i++) {
+        newLines.push(lines[i - 1]);
+    }
 
-	hunk.lines.forEach( (line, index) => {
-	    if (line.charAt(0) === '+') {
-		// new line
-		newLines.push(line.slice(1));
-		
-	    } else if (line.charAt(0) === '-') {
-		// removed line
-		dataIndex++;
-		
-	    } else if (line.charAt(0) !== '\\') {
-		// patch doesn't say anything about this line
-		newLines.push(lines[dataIndex++ - 1]);
-	    }
-	});
+    hunk.lines.forEach( (line, index) => {
+        if (line.charAt(0) === '+') {
+        // new line
+        newLines.push(line.slice(1));
 
-	dataIndex = hunk.oldStart + hunk.oldLines + 1;
+        } else if (line.charAt(0) === '-') {
+        // removed line
+        dataIndex++;
 
-	if (hunkIndex === patch.hunks.length - 1) {
-	    for (i = dataIndex - 1; i < lines.length; i++) {
-		newLines.push(lines[i]);
-	    }
-	}
+        } else if (line.charAt(0) !== '\\') {
+        // patch doesn't say anything about this line
+        newLines.push(lines[dataIndex++ - 1]);
+        }
+    });
+
+    dataIndex = hunk.oldStart + hunk.oldLines + 1;
+
+    if (hunkIndex === patch.hunks.length - 1) {
+        for (i = dataIndex - 1; i < lines.length; i++) {
+        newLines.push(lines[i]);
+        }
+    }
     });
 
     return newLines.join('\n');
@@ -80,44 +81,44 @@ exports.applyPatch = function applyPatch(data, patch) {
 
 exports.checkIfFileChanged = function checkIfFileChanged(data1, f2, removeBootstrapPatch) {
     return new Promise((resolve, reject) => {
-	fs.readFile(f2, (err2, data2) => {
-	    try {
-		if (err2) {
-		    console.error('Error reading file', err2);
-		    reject(err2);
-		} else {
-		    data2 = data2.toString();
+    fs.readFile(f2, (err2, data2) => {
+        try {
+        if (err2) {
+            console.error('Error reading file', err2);
+            reject(err2);
+        } else {
+            data2 = data2.toString();
 
-		    if (removeBootstrapPatch) {
-			try {
-			    data2 = exports.applyPatch(data2, removeBootstrapPatch);
-			} catch (err) {
-			    console.error('Error applying patch', err);
-			    console.error(removeBootstrapPatch);
-			    console.error(err.stack);
-			}
-		    }
+            if (removeBootstrapPatch) {
+            try {
+                data2 = exports.applyPatch(data2, removeBootstrapPatch);
+            } catch (err) {
+                console.error('Error applying patch', err);
+                console.error(removeBootstrapPatch);
+                console.error(err.stack);
+            }
+            }
 
-		    var comparo;
-		    try {
-			comparo = JsDiff.createPatch('wskdb', data1, data2);
-		    } catch (err) {
-			console.error('Error creating patch', err);
-			console.error('D1', data1);
-			console.error('D2', data2);
-			console.error(err.stack);
-		    }
-		    if (comparo && comparo.indexOf('@@') >= 0) {
-			resolve(comparo);
-		    } else {
-			reject(false);
-		    }
-		}
-	    } catch (err) {
-		console.error('Error creating diff', err);
-		reject(err);
-	    }
-	});
+            var comparo;
+            try {
+            comparo = JsDiff.createPatch('wskdb', data1, data2);
+            } catch (err) {
+            console.error('Error creating patch', err);
+            console.error('D1', data1);
+            console.error('D2', data2);
+            console.error(err.stack);
+            }
+            if (comparo && comparo.indexOf('@@') >= 0) {
+            resolve(comparo);
+            } else {
+            reject(false);
+            }
+        }
+        } catch (err) {
+        console.error('Error creating diff', err);
+        reject(err);
+        }
+    });
     });
 };
 
@@ -127,14 +128,14 @@ exports.removeIfNotChanged = function removeIfNotChanged(data1, f2, cleanupF2, r
 
 exports.rememberIfChanged = function rememberIfChanged(action, f2, cleanupF2, removeBootstrapPatch) {
     return exports.removeIfNotChanged(action.exec.code, f2, cleanupF2, removeBootstrapPatch)
-	.then(comparo => {
-	    if (comparo) {
-		outstandingDiffs[entityKey(action.namespace, action.name)] = {
-		    action: action,
-		    comparo: comparo
-		};
-	    }
-	});
+    .then(comparo => {
+        if (comparo) {
+        outstandingDiffs[entityKey(action.namespace, action.name)] = {
+            action: action,
+            comparo: comparo
+        };
+        }
+    });
 };
 
 exports.createPatch = function(data1, data2) {

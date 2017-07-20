@@ -1,11 +1,12 @@
 /*
- * Copyright 2015-2016 IBM Corporation
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,59 +30,59 @@ exports.invoke = function(req, res) {
 
     var client = getClient(key);
     if (client) {
-	//
-	// fetch the action details from the openwhisk server
-	//
-	request({
-	    url: "https://openwhisk.ng.bluemix.net/api/v1"
-		+ "/namespaces/" + encodeURIComponent(namespace)
-		+ "/actions/" + encodeURIComponent(action),
-	    method: "GET",
-	    headers: {
-		"Authorization": 'basic ' + new Buffer(key).toString('base64')
-	    }
-	}, function(err, response, body) {
-	    if (err || response.statusCode != 200) {
-		if (err) console.log("INVOKE:ErrorFetchingAction " + JSON.stringify(err));
-		else console.log("INVOKE:ErrorFetchingAction_b " + JSON.stringify(response) + " " + JSON.stringify(body));		
-		res.status(response.statusCode || 500).send(body);
-	    } else {
-		var activationId = uuid.v4();
+    //
+    // fetch the action details from the openwhisk server
+    //
+    request({
+        url: "https://openwhisk.ng.bluemix.net/api/v1"
+        + "/namespaces/" + encodeURIComponent(namespace)
+        + "/actions/" + encodeURIComponent(action),
+        method: "GET",
+        headers: {
+        "Authorization": 'basic ' + new Buffer(key).toString('base64')
+        }
+    }, function(err, response, body) {
+        if (err || response.statusCode != 200) {
+        if (err) console.log("INVOKE:ErrorFetchingAction " + JSON.stringify(err));
+        else console.log("INVOKE:ErrorFetchingAction_b " + JSON.stringify(response) + " " + JSON.stringify(body));
+        res.status(response.statusCode || 500).send(body);
+        } else {
+        var activationId = uuid.v4();
 
-		//
-		// send the action details to the debug client
-		//
-		client.ws.send(JSON.stringify({
-		    type: "invoke",
-		    key: key,
-		    activationId: activationId,
-		    onDone_trigger: req.body.onDone_trigger,
-		    actualParameters: req.body.actualParameters,
-		    action: JSON.parse(body)
-		}), function onError(error) {
-		    console.log("INVOKE:ErrorSendingToClient " + JSON.stringify(error) + " " + client.ws.readyState);
-		});
+        //
+        // send the action details to the debug client
+        //
+        client.ws.send(JSON.stringify({
+            type: "invoke",
+            key: key,
+            activationId: activationId,
+            onDone_trigger: req.body.onDone_trigger,
+            actualParameters: req.body.actualParameters,
+            action: JSON.parse(body)
+        }), function onError(error) {
+            console.log("INVOKE:ErrorSendingToClient " + JSON.stringify(error) + " " + client.ws.readyState);
+        });
 
-		//
-		// create an activation record for this invocation
-		//
-		client.activations[activationId] = activations[activationId] = {
-		    result: undefined,
-		    action: JSON.parse(body)
-		};
+        //
+        // create an activation record for this invocation
+        //
+        client.activations[activationId] = activations[activationId] = {
+            result: undefined,
+            action: JSON.parse(body)
+        };
 
-		//
-		// respond to the invoke dispatcher that all is well
-		//
-		res.status(200).send({
-		    activationId: activationId
-		});
-	    }
-	});
-	
+        //
+        // respond to the invoke dispatcher that all is well
+        //
+        res.status(200).send({
+            activationId: activationId
+        });
+        }
+    });
+
     } else {
-	console.log("INVOKE:ClientNotFound");
-	res.sendStatus(404);
+    console.log("INVOKE:ClientNotFound");
+    res.sendStatus(404);
     }
 }
 
@@ -93,12 +94,12 @@ exports.status = function(req, res) {
 
     var activation = activations[activationId];
     if (activation) {
-	console.log("INVOKE:Status:Result " + JSON.stringify(activation.result));
-	res.status(200).send(JSON.stringify({
-	    result: activation.result
-	}));
+    console.log("INVOKE:Status:Result " + JSON.stringify(activation.result));
+    res.status(200).send(JSON.stringify({
+        result: activation.result
+    }));
     } else {
-	nope(res, "Could not find activationId for this debug client " + activationId);
+    nope(res, "Could not find activationId for this debug client " + activationId);
     }
 }
 

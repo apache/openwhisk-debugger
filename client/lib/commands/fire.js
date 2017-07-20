@@ -1,11 +1,12 @@
 /*
- * Copyright 2015-2016 IBM Corporation
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,29 +26,28 @@ exports.created = {};
 
 /**
  * Fires a trigger
- *
  */
 exports.fire = function fireTrigger(wskprops, next, name) {
     var ow = setupOpenWhisk(wskprops);
 
     function doFire(name) {
-	return ow.triggers.invoke(name)
-	    .then(ok(next))
-	    .catch(errorWhile('firing trigger'), next);
+    return ow.triggers.invoke(name)
+        .then(ok(next))
+        .catch(errorWhile('firing trigger'), next);
     }
-    
+
     if (!name) {
-	_list(ow, function(L) {
-	    inquirer
-		.prompt([{ name: 'triggerName', type: 'list',
-			   message: 'Which trigger do you wish to fire?',
-			   choices: L.map(trigger => trigger.name)
-			 }])
-		.then(doFire)
-		.catch(next);
-		
-	}, 'triggers');
+    _list(ow, function(L) {
+        inquirer
+        .prompt([{ name: 'triggerName', type: 'list',
+               message: 'Which trigger do you wish to fire?',
+               choices: L.map(trigger => trigger.name)
+             }])
+        .then(doFire)
+        .catch(next);
+
+    }, 'triggers');
     } else {
-	doFire({ triggerName: name });
+    doFire({ triggerName: name });
     }
 };
